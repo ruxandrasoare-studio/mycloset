@@ -1,0 +1,1680 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Closet</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="closet-app" content="4">
+<meta name="apple-mobile-web-app-title" content="Closet">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#E8EBEF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#13151A" media="(prefers-color-scheme: dark)">
+<style>
+:root{
+  --bg:#E8EBEF; --surface:#FFFFFF; --ink:#1D2130; --muted:#5F6576; --line:#D2D6DD;
+  --accent:#2F5389; --accent-ink:#FFFFFF; --tag:#F4D8D0; --tag-ink:#6B2A1E; --sheet:#F6F6F4;
+  --font:-apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#13151A; --surface:#1D2028; --ink:#E8EAF0; --muted:#9AA0AF; --line:#2F333D;
+    --accent:#9CB4DD; --accent-ink:#13151A; --tag:#4B2E28; --tag-ink:#F6D9D1; --sheet:#252932;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#13151A; --surface:#1D2028; --ink:#E8EAF0; --muted:#9AA0AF; --line:#2F333D;
+  --accent:#9CB4DD; --accent-ink:#13151A; --tag:#4B2E28; --tag-ink:#F6D9D1; --sheet:#252932;
+  color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+img{max-width:100%;display:block}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
+main{max-width:760px;margin:0 auto;padding:20px 16px calc(96px + env(safe-area-inset-bottom,0px))}
+h1{font-size:34px;line-height:1.05;font-weight:700;letter-spacing:-.025em;margin:0}
+h2{font-size:19px;font-weight:600;letter-spacing:-.01em;margin:28px 0 10px}
+h3{font-size:17px;font-weight:600;margin:0 0 10px}
+p{margin:0}
+.sub{color:var(--muted);margin-top:4px}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.actions{display:flex;gap:8px}
+.btn{border:0;border-radius:10px;padding:11px 16px;font-weight:600;background:var(--accent);color:var(--accent-ink);display:inline-flex;align-items:center;gap:6px;min-height:44px}
+.btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.btn.quiet{background:none;color:var(--muted);padding:11px 8px}
+.btn:disabled{opacity:.5;cursor:default}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:16px 16px 4px;margin:0 -16px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chips.wrap{flex-wrap:wrap;overflow:visible;margin:0;padding:6px 0 0}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;font-size:15px;min-height:38px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.field{display:block;margin-top:18px}
+.field > span{display:block;font-size:14px;color:var(--muted);font-weight:500}
+
+.banner{margin-top:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 12px 12px 16px;background:var(--tag);color:var(--tag-ink);border-radius:12px;font-weight:500}
+.banner .btn{background:var(--tag-ink);color:var(--tag);min-height:40px;padding:8px 14px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:18px 14px;margin-top:18px}
+.item{background:none;border:0;padding:0;text-align:left;display:flex;flex-direction:column;align-items:flex-start;min-width:0;position:relative;width:100%}
+.item .ph{width:100%;aspect-ratio:1;background:var(--surface);border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.item .ph img{width:100%;height:100%;object-fit:cover}
+.item.sel .ph{outline:3px solid var(--accent);outline-offset:2px}
+.item .check{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:var(--surface);border:1.5px solid var(--line);display:grid;place-items:center;font-size:15px;font-weight:700}
+.item.sel .check{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.hangtag{position:relative;margin-top:-10px;margin-left:10px;max-width:calc(100% - 16px);display:inline-flex;align-items:center;gap:7px;padding:5px 11px 5px 9px;background:var(--surface);border:1px solid var(--line);border-radius:3px 12px 12px 3px;font-size:13.5px;font-weight:500;box-shadow:0 1px 0 var(--line);transform:rotate(-2deg)}
+.hangtag::before{content:"";flex:none;width:7px;height:7px;border-radius:50%;border:1.5px solid var(--muted)}
+.hangtag b{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hangtag.neg{background:var(--tag);color:var(--tag-ink);border-color:transparent}
+.hangtag.neg::before{border-color:var(--tag-ink)}
+.hangtag.pending{color:var(--muted);font-style:italic}
+.meta{font-size:12.5px;color:var(--muted);margin:6px 0 0 12px}
+
+.empty{margin-top:28px;padding:22px;border:1.5px dashed var(--line);border-radius:14px;max-width:520px}
+.empty h3{margin-bottom:6px}
+.empty p + p{margin-top:8px}
+.note{margin-top:14px;font-size:14px;color:var(--muted)}
+.err{margin-top:14px;color:var(--tag-ink);background:var(--tag);padding:10px 12px;border-radius:8px;font-size:15px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:14px}
+.lay{background:var(--sheet);border-radius:8px;padding:12px}
+.lay .main{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lay .main.n1{grid-template-columns:minmax(0,60%)}
+.lay .extra{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.lay figure{margin:0;min-width:0}
+.lay img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;background:var(--surface)}
+.lay figcaption{font-size:12.5px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lay.sm{padding:8px}
+.lay.sm figcaption{display:none}
+.lay.sm .main{gap:6px}.lay.sm .extra{gap:6px;margin-top:6px;grid-template-columns:repeat(5,1fr)}
+.why{margin-top:12px;font-size:15.5px;line-height:1.5;max-width:62ch}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.row .btn{padding:9px 14px;min-height:40px;font-size:15px}
+.anchor{display:inline-flex;align-items:center;gap:10px;margin-top:6px;padding:6px;border:1px solid var(--line);background:var(--surface);border-radius:10px}
+.anchor img{width:40px;height:40px;object-fit:cover;border-radius:6px}
+.anchor button{border:0;background:none;color:var(--muted);padding:6px 8px;font-size:14px}
+.toggle{display:flex;align-items:center;gap:10px;margin-top:18px;font-size:15.5px}
+.toggle input{width:20px;height:20px;accent-color:var(--accent)}
+
+.hist{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.hist .d{width:84px;flex:none;font-size:14px;color:var(--muted)}
+.hist .t{display:flex;gap:6px;overflow-x:auto}
+.hist img{width:44px;height:44px;object-fit:cover;border-radius:5px;flex:none}
+.backup{margin-top:36px;padding-top:6px;border-top:1px solid var(--line)}
+
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+.tabs button{flex:1;max-width:220px;background:none;border:0;padding:12px 8px 14px;font-size:15px;color:var(--muted);font-weight:500;position:relative}
+.tabs button[aria-current="page"]{color:var(--ink);font-weight:600}
+.tabs button[aria-current="page"]::after{content:"";position:absolute;top:0;left:30%;right:30%;height:3px;border-radius:0 0 3px 3px;background:var(--ink)}
+.selbar{position:fixed;left:12px;right:12px;bottom:calc(64px + env(safe-area-inset-bottom,0px));max-width:736px;margin:0 auto;background:var(--ink);color:var(--bg);border-radius:14px;padding:10px 10px 10px 16px;display:flex;align-items:center;gap:8px;z-index:6;flex-wrap:wrap}
+.selbar span{flex:1;font-weight:600;min-width:90px}
+.selbar .btn{background:var(--bg);color:var(--ink);min-height:40px;padding:8px 12px;font-size:15px}
+.selbar .btn.quiet{background:none;color:var(--bg);opacity:.8}
+
+dialog{border:0;border-radius:16px;padding:0;background:var(--surface);color:var(--ink);width:min(520px,calc(100% - 24px));max-height:calc(100% - 40px)}
+dialog::backdrop{background:rgba(10,12,18,.55)}
+.dlg{padding:18px;overflow-y:auto}
+.dlg .ph{width:100%;max-height:260px;object-fit:contain;border-radius:8px;background:var(--sheet)}
+.dlg .count{font-size:14px;color:var(--muted);margin-bottom:10px}
+.dlg input[type=text],.dlg select{width:100%;margin-top:6px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);min-height:44px}
+.dlg .stats{margin-top:12px;color:var(--muted);font-size:15px}
+.dlg .row{justify-content:space-between}
+.danger{color:#B3261E}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .danger{color:#F2B8B5}}
+:root[data-theme="dark"] .danger{color:#F2B8B5}
+
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:15px;z-index:10;max-width:calc(100% - 32px);opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+.loading{padding:60px 0;color:var(--muted)}
+
+.sw{display:inline-block;width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.18);flex:none}
+.sw.multi{background:conic-gradient(#e53935,#fbc02d,#43a047,#1e88e5,#8e24aa,#e53935)}
+.chip{display:inline-flex;align-items:center;gap:7px}
+.sec{margin-top:22px;padding-top:14px;border-top:1px solid var(--line)}
+.sec > h4{margin:0;font-size:15px;font-weight:600}
+.sec > p.hint{font-size:13.5px;color:var(--muted);margin-top:2px}
+.req{color:var(--accent);font-weight:600}
+textarea{width:100%;margin-top:6px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);min-height:96px;font:inherit;color:inherit;resize:vertical}
+.stepper{display:inline-flex;align-items:center;gap:0;margin-top:6px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.stepper button{border:0;background:var(--bg);width:44px;height:40px;font-size:20px}
+.stepper span{min-width:44px;text-align:center;font-weight:600}
+.seg{display:inline-flex;margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px}
+.seg button{border:0;background:none;padding:8px 16px;border-radius:8px;font-weight:500;color:var(--muted);min-height:38px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);font-weight:600}
+.msg{margin-top:16px}
+.msg.user{display:flex;justify-content:flex-end}
+.msg.user p{background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:14px 14px 4px 14px;max-width:85%}
+.msg.ai > p{background:var(--surface);border:1px solid var(--line);padding:10px 14px;border-radius:14px 14px 14px 4px;max-width:92%}
+.ask{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom,0px));background:var(--bg);padding:12px 0 4px;margin-top:12px}
+.ask textarea{min-height:64px;margin:0}
+.keybox input{width:100%;margin-top:6px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);min-height:44px}
+.tips{margin:8px 0 0;padding-left:18px;font-size:14.5px;color:var(--muted)}
+.tips li + li{margin-top:3px}
+.status{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--ink);color:var(--bg);position:absolute;top:8px;left:8px}
+.item.off .ph img{opacity:.45}
+.fc{margin-top:8px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;font-size:15px}
+.fc .chips{margin-bottom:8px}
+.linkbtn{border:0;background:none;padding:0;color:var(--accent);font-weight:600;text-decoration:underline;font-size:inherit}
+.chip[aria-pressed="mixed"]{border-style:dashed;border-color:var(--ink)}
+.chip small{color:var(--muted);font-size:12px}
+.hint-inline{font-weight:400;font-size:13px}
+.qty{font-weight:600;color:var(--muted);margin-left:2px}
+.tabs button{font-size:14px;padding-left:4px;padding-right:4px}
+.tools{display:flex;gap:8px;margin-top:16px;align-items:flex-end}
+.tools input[type=search],.tools select,.datein{flex:1;min-width:0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);min-height:44px;font:inherit;color:inherit}
+.tools select{flex:0 0 auto;max-width:44%}
+.datein{width:100%;margin-top:6px}
+.dayhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px}
+.dayhead h3{margin:0}.dayhead .note{margin:0;text-align:right}
+.tripcard{display:block;width:100%;text-align:left;color:inherit;font:inherit}
+.tripcard h3{margin:0}
+.tripfit{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.tripfit .label{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.packcat{font-size:13px;font-weight:600;color:var(--muted);margin:16px 0 4px}
+.packrow{display:flex;align-items:center;gap:12px;width:100%;padding:8px 0;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;color:inherit;font:inherit}
+.packrow img{width:44px;height:44px;object-fit:cover;border-radius:6px;flex:none}
+.packrow .box{width:24px;height:24px;border-radius:6px;border:1.5px solid var(--line);display:grid;place-items:center;flex:none;font-weight:700}
+.packrow.on .box{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.packrow.on .nm{color:var(--muted);text-decoration:line-through}
+.packrow .nm{display:flex;flex-direction:column;min-width:0}
+.packrow small{color:var(--muted);font-size:13px;text-decoration:none}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:14px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.stat b{display:block;font-size:24px;font-weight:700;letter-spacing:-.02em}
+.stat span{font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<main id="app"><p class="loading">Opening your closet…</p></main>
+<div id="selbar"></div>
+<nav class="tabs" id="tabs" aria-label="Sections">
+  <button data-tab="closet">Closet</button>
+  <button data-tab="ideas">Ideas</button>
+  <button data-tab="plan">Plan</button>
+  <button data-tab="outfits">Outfits</button>
+  <button data-tab="stats">Stats</button>
+</nav>
+<input type="file" id="file" accept="image/*" multiple hidden>
+<input type="file" id="photoIn" accept="image/*" hidden>
+<input type="file" id="restore" accept="application/json,.json" hidden>
+<dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ================= constants ================= */
+const CATS=["Top","Bottom","Dress","Outerwear","Shoes","Legwear","Underlayer","Bag","Accessory"];
+const TYPES={
+  Top:["T-shirt","Tank / cami","Shirt / blouse","Knit / sweater","Sweater vest","Bodysuit","Sports top","Other"],
+  Bottom:["Trousers","Jeans","Skirt","Shorts","Leggings","Other"],
+  Dress:["Dress","Jumpsuit"],
+  Outerwear:["Cardigan","Blazer","Gilet","Jacket","Trench","Coat","Puffer"],
+  Shoes:["Sneakers","Flats","Loafers","Boots","Heels","Sandals","Other"],
+  Legwear:["Tights","Socks"],
+  Underlayer:["Slip","Bike shorts","Bodysuit","Bralette","Camisole"],
+  Bag:["Handbag","Crossbody","Clutch","Tote","Backpack"],
+  Accessory:["Jewellery","Belt","Scarf","Hat","Sunglasses","Other"]
+};
+const MID=new Set(["Cardigan","Blazer","Gilet"]);
+const OCCASIONS=["Office","Casual","Going out","Elegant","Travel","Business travel","Holiday","Sport"];
+const WEATHER=["Hot","Warm","Mild","Cool","Cold"];
+const SEASONS=["Spring","Summer","Autumn","Winter"];
+const WEATHER_SEASON={Hot:["Summer"],Warm:["Summer","Spring"],Mild:["Spring","Autumn"],Cool:["Autumn","Winter"],Cold:["Winter"]};
+const WARMTH=["Very light","Light","Medium","Warm"];
+const RANGE={Hot:[0,3],Warm:[0,4],Mild:[2.5,7],Cool:[4.5,10.5],Cold:[7,99]};
+const MAXPIECE={Hot:1,Warm:2,Mild:3,Cool:3,Cold:3};
+const COLORS=[["Black","#111"],["Charcoal","#3a3d42"],["Grey","#9a9ea5"],["White","#fff"],["Ivory","#f7f2e4"],["Cream","#efe6cf"],["Beige","#d9c7a7"],["Taupe","#a39383"],["Camel","#c19a6b"],["Brown","#7a4f2e"],["Chocolate","#4a2c1d"],["Khaki","#b5a878"],["Olive","#6b6b2f"],["Green","#2e7d4f"],["Mint","#a8dcc4"],["Teal","#1f7a7a"],["Navy","#1e2a4a"],["Denim","#4a6b92"],["Blue","#2f63c9"],["Light blue","#a9c8ec"],["Lilac","#c7b3e0"],["Purple","#6a3d99"],["Burgundy","#6d1f2e"],["Red","#c62828"],["Rust","#b0522a"],["Orange","#ee8a2a"],["Yellow","#f2d03b"],["Pink","#e88fb0"],["Blush","#f2c9c4"],["Gold","#c9a74a"],["Silver","#c0c4cc"],["Multicolour",""]];
+const COLOR_HEX=Object.fromEntries(COLORS);
+const NEUTRAL=new Set(["Black","Charcoal","Grey","White","Ivory","Cream","Beige","Taupe","Camel","Brown","Chocolate","Navy","Denim","Gold","Silver"]);
+const NEAR=new Set(["Khaki","Olive","Burgundy","Blush"]);
+const FAMILY={Khaki:"green",Olive:"green",Green:"green",Mint:"green",Teal:"blue",Blue:"blue","Light blue":"blue",Lilac:"purple",Purple:"purple",Burgundy:"red",Red:"red",Rust:"orange",Orange:"orange",Yellow:"yellow",Pink:"pink",Blush:"pink",Multicolour:"multi"};
+const PATTERNS=["Solid","Stripes","Checks / plaid","Floral","Polka dot","Animal print","Graphic / logo","Abstract print"];
+const MATERIALS=["Cotton","Linen","Denim","Jersey","Knit","Wool","Cashmere","Silk","Satin","Chiffon","Lace","Mesh","Leather","Faux leather","Suede","Velvet","Corduroy","Tweed","Sequin","Technical / sport","Polyester","Other"];
+const SMOOTH=new Set(["Satin","Silk","Leather","Faux leather","Chiffon"]);
+const TEXTURED=new Set(["Knit","Wool","Cashmere","Tweed","Corduroy","Lace","Velvet","Suede"]);
+const FITS=["Tight","Fitted","Relaxed","Oversized"];
+const SLEEVES=["Strapless","Thin straps","Thick straps","Sleeveless","Short","3/4","Long"];
+const SLEEVE_RANK={"Strapless":-1,"Thin straps":0,"Thick straps":1,"Sleeveless":2,"Short":3,"3/4":3.5,"Long":4};
+const NECKS=["Off-shoulder / strapless","V-neck","Square","Sweetheart","Scoop","Round","Boat","Collar","High / turtleneck"];
+const NECK_RANK={"Off-shoulder / strapless":0,"V-neck":1,"Square":1,"Sweetheart":1,"Scoop":1,"Round":2,"Boat":2,"Collar":3,"High / turtleneck":4};
+
+const FIELDS={
+  type:{label:"Type"},
+  colors2:{label:"Other colours",colors:true,multi:true},
+  pattern:{label:"Pattern",opts:PATTERNS,multi:true},
+  material:{label:"Material",opts:MATERIALS,multi:true},
+  stretch:{label:"Stretch",opts:["None","Some","Stretchy"]},
+  fit:{label:"Fit",opts:FITS},
+  sleeves:{label:"Sleeves / straps",opts:SLEEVES},
+  neckline:{label:"Neckline",opts:NECKS},
+  topLength:{label:"Length",opts:["Cropped","Waist","Hip","Long / tunic"]},
+  dressLength:{label:"Length",opts:["Mini","Knee","Midi","Maxi"]},
+  bottomLength:{label:"Length",opts:["Shorts","Mini","Knee","Midi","Maxi","Cropped / ankle","Full length"]},
+  silhouette:{label:"Shape",opts:["Wide leg","Straight","Slim / skinny","Flared / bootcut","Tapered","Barrel","A-line","Pencil","Pleated","Wrap","Slip / bias"]},
+  rise:{label:"Waist",opts:["High","Mid","Low"]},
+  closure:{label:"Closure",opts:["Zip","Buttons","Elastic","Drawstring","Wrap / tie","None"],multi:true},
+  sheer:{label:"Sheerness",opts:["Opaque","Semi-sheer","Sheer"]},
+  outerLength:{label:"Length",opts:["Cropped","Hip","Mid-thigh","Long"]},
+  wornOpen:{label:"Usually worn",opts:["Open","Closed","Either"]},
+  rainproof:{label:"Rainproof",opts:["Yes","No"]},
+  heel:{label:"Heel",opts:["Flat","Low","High"]},
+  toe:{label:"Toe",opts:["Closed","Open"]},
+  opacity:{label:"Opacity",opts:["Sheer","Opaque"]},
+  bagSize:{label:"Size",opts:["Small","Medium","Large"]}
+};
+const LAYOUT={
+  Top:["sleeves","neckline","fit","topLength","material","stretch","pattern","sheer","colors2"],
+  Dress:["sleeves","neckline","fit","dressLength","material","stretch","pattern","sheer","colors2"],
+  Bottom:["silhouette","bottomLength","rise","fit","closure","material","stretch","pattern","sheer","colors2"],
+  Outerwear:["fit","outerLength","wornOpen","rainproof","material","pattern","colors2"],
+  Shoes:["heel","toe","material"],
+  Legwear:["opacity","pattern"],
+  Underlayer:["fit"],
+  Bag:["bagSize","material"],
+  Accessory:["material"]
+};
+const NEEDS_WARMTH=new Set(["Top","Bottom","Dress","Outerwear","Shoes","Legwear"]);
+const NEEDS_TYPE=new Set(["Outerwear","Legwear","Underlayer"]);
+const NO_OCCASION=new Set(["Legwear","Underlayer"]);
+const ORDER={Outerwear:0,Dress:1,Top:1,Bottom:2,Legwear:3,Shoes:4,Bag:5,Accessory:6,Underlayer:7};
+const MAIN=new Set(["Outerwear","Dress","Top","Bottom"]);
+const NEGLECT_DAYS=21;
+const KINDS=["items","outfits","log","passes","plans","trips"];
+const DEFAULT_MODEL="claude-sonnet-5-5";
+
+/* ================= helpers ================= */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const rid=()=>Math.random().toString(36).slice(2,8);
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const dayMs=s=>new Date(s+"T12:00:00").getTime();
+const sig=ids=>[...ids].sort().join(",");
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const cap=s=>s?s[0].toUpperCase()+s.slice(1):s;
+const pickRand=a=>a[Math.floor(Math.random()*a.length)];
+const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+const lsSet=(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
+
+const S={items:new Map(),outfits:new Map(),log:new Map(),passes:new Map()};
+const ui={tab:"closet",filter:"All",selecting:false,sel:new Set(),anchor:null,occasion:"Office",weather:"Mild",rain:false,neglect:true,
+  results:[],err:"",ready:false,queue:[],queueLabel:"",mode:"quick",chat:[],asking:false,askErr:"",ctl:null,draft:null,draftId:null};
+
+let toastT;
+function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("on"),2800)}
+
+/* ================= storage (IndexedDB, this device) ================= */
+const DB={
+  db:null,
+  open(){return new Promise((res,rej)=>{
+    const r=indexedDB.open("closet",2);
+    r.onupgradeneeded=()=>{const d=r.result;for(const k of KINDS)if(!d.objectStoreNames.contains(k))d.createObjectStore(k,{keyPath:"id"})};
+    r.onsuccess=()=>{this.db=r.result;res()};r.onerror=()=>rej(r.error);
+  })},
+  all(k){return new Promise((res,rej)=>{const q=this.db.transaction(k).objectStore(k).getAll();q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
+  tx(k,fn){return new Promise((res,rej)=>{const t=this.db.transaction(k,"readwrite");fn(t.objectStore(k));t.oncomplete=res;t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error)})}
+};
+const Store={
+  async load(){await DB.open();for(const k of KINDS){const rows=await DB.all(k);S[k]=new Map(rows.map(r=>[r.id,r]))}await migrate()},
+  async put(kind,id,data){
+    const row={...data,id};
+    try{await DB.tx(kind,s=>s.put(row));S[kind].set(id,row)}
+    catch(e){toast("Your phone is out of storage for this app. Free up space and try again.");throw e}
+  },
+  async remove(kind,id){await DB.tx(kind,s=>s.delete(id)).catch(()=>{});S[kind].delete(id)}
+};
+async function migrate(){
+  for(const it of S.items.values()){
+    if(it.v===3)continue;
+    const n={...it};
+    if(n.v!==2){
+      n.qty=n.qty||1;n.status=n.status||"In closet";
+      if(n.color==="Print"){n.color="Multicolour";n.pattern=n.pattern||"Abstract print"}
+      if(n.color==="Metallic")n.color="Silver";
+      if(!n.needsTags){
+        const s=it.season||[];
+        if(n.warmth==null)n.warmth=(s.includes("Cold")&&!s.includes("Warm"))?3:(s.length===1&&s[0]==="Warm")?1:2;
+        n.needsReview=true;
+      }
+      n.season=[];
+    }
+    for(const k of ["material","pattern","closure"])if(n[k]!=null&&!Array.isArray(n[k]))n[k]=n[k]?[n[k]]:[];
+    if("color2" in n){n.colors2=arr(n.colors2).length?n.colors2:(n.color2?[n.color2]:[]);delete n.color2}
+    n.v=3;
+    await Store.put("items",n.id,n);
+  }
+}
+
+/* ================= derived data ================= */
+function wearStats(){
+  const m=new Map();
+  for(const e of S.log.values())for(const id of e.itemIds||[]){
+    const w=m.get(id)||{count:0,last:null};w.count++;if(!w.last||e.date>w.last)w.last=e.date;m.set(id,w);
+  }
+  return m;
+}
+function daysSince(it,w){const ref=w&&w.last?dayMs(w.last):(it.addedAt||Date.now());return Math.floor((Date.now()-ref)/864e5)}
+function isNeglected(it,w){return !it.needsTags&&daysSince(it,w)>=NEGLECT_DAYS}
+function ago(date){if(!date)return "never";const d=Math.round((dayMs(today())-dayMs(date))/864e5);return d<=0?"today":d===1?"yesterday":d+" days ago"}
+function items(){return [...S.items.values()]}
+const available=it=>!it.status||it.status==="In closet";
+const W=it=>it.warmth==null?2:+it.warmth;
+const arr=v=>Array.isArray(v)?v:(v?[v]:[]);
+const MULTI_FIELDS=["material","pattern","closure","colors2"];
+function missingDetails(it){
+  if(it.needsTags)return false;
+  if(it.needsReview)return true;
+  if(it.category==="Top"||it.category==="Dress")return !it.sleeves||!it.fit;
+  if(it.category==="Bottom")return !it.fit||!it.bottomLength;
+  return false;
+}
+
+/* ================= photos ================= */
+function readAsDataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}
+async function resizeImage(file,max=480,q=0.72){
+  const src=await readAsDataURL(file);
+  const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src});
+  const s=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+  const w=Math.round(img.naturalWidth*s),h=Math.round(img.naturalHeight*s);
+  const c=document.createElement("canvas");c.width=w;c.height=h;
+  const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,w,h);x.drawImage(img,0,0,w,h);
+  return c.toDataURL("image/jpeg",q);
+}
+async function addFiles(files){
+  if(!files.length)return;
+  toast(files.length===1?"Adding 1 piece…":`Adding ${files.length} pieces…`);
+  let n=0;
+  for(const f of files){
+    try{
+      const photo=await resizeImage(f);const id=rid();
+      await Store.put("items",id,{v:3,name:"",brand:"",category:"",type:"",color:"",formality:[],season:[],qty:1,status:"In closet",photo,addedAt:Date.now()+n,needsTags:true});
+      n++;
+    }catch(e){toast("One photo couldn't be read. Try a JPEG or PNG.")}
+  }
+  render();
+  if(n)startQueue("tag");
+}
+function startQueue(kind){
+  const list=kind==="tag"?items().filter(i=>i.needsTags):items().filter(missingDetails);
+  ui.queue=list.sort((a,b)=>(a.addedAt||0)-(b.addedAt||0)).map(i=>i.id);
+  ui.queueLabel=kind==="tag"?"Tagging":"Reviewing";
+  if(ui.queue.length)openItem(ui.queue[0],true);
+}
+
+/* ================= description → tags ================= */
+const COLOR_WORDS=[["off-white","Ivory"],["ecru","Cream"],["oatmeal","Beige"],["sand","Beige"],["stone","Beige"],["tan","Camel"],["espresso","Chocolate"],["sage","Olive"],["emerald","Green"],["forest","Green"],["cobalt","Blue"],["sky blue","Light blue"],["powder blue","Light blue"],["wine","Burgundy"],["bordeaux","Burgundy"],["maroon","Burgundy"],["oxblood","Burgundy"],["lavender","Lilac"],["fuchsia","Pink"],["terracotta","Rust"],["mustard","Yellow"],["indigo","Denim"],
+  ...COLORS.map(([c])=>[c.toLowerCase(),c]).filter(([w])=>w!=="multicolour")];
+function parseDesc(text){
+  const L=" "+text.toLowerCase().replace(/[’]/g,"'")+" ";const r={};const has=re=>re.test(L);
+  const first=(pairs)=>{for(const [re,v] of pairs)if(re.test(L))return v};
+  const all=(pairs)=>{const out=[];for(const [re,v] of pairs)if(re.test(L)&&!out.includes(v))out.push(v);return out.length?out:undefined};
+  // category and type
+  const ct=first([
+    [/\bjumpsuit|playsuit\b/,["Dress","Jumpsuit"]],[/\bdress\b/,["Dress","Dress"]],[/\bskirt\b/,["Bottom","Skirt"]],[/\bjeans\b/,["Bottom","Jeans"]],
+    [/\bleggings\b/,["Bottom","Leggings"]],[/\bshorts\b/,["Bottom","Shorts"]],[/\b(trousers|pants|chinos)\b/,["Bottom","Trousers"]],
+    [/\bcardigan\b/,["Outerwear","Cardigan"]],[/\bblazer\b/,["Outerwear","Blazer"]],[/\btrench\b/,["Outerwear","Trench"]],[/\bpuffer|down jacket\b/,["Outerwear","Puffer"]],
+    [/\bgilet\b/,["Outerwear","Gilet"]],[/\bcoat\b/,["Outerwear","Coat"]],[/\bjacket\b/,["Outerwear","Jacket"]],
+    [/\bsweater vest|knit vest|tank top vest\b/,["Top","Sweater vest"]],[/\b(sweater|jumper|pullover)\b/,["Top","Knit / sweater"]],
+    [/\bbodysuit\b/,["Top","Bodysuit"]],[/\bsports bra|sport top\b/,["Top","Sports top"]],[/\b(t-shirt|tee|tshirt)\b/,["Top","T-shirt"]],
+    [/\b(tank|cami|camisole)\b/,["Top","Tank / cami"]],[/\b(shirt|blouse)\b/,["Top","Shirt / blouse"]],
+    [/\b(sneakers|trainers)\b/,["Shoes","Sneakers"]],[/\bboots?\b/,["Shoes","Boots"]],[/\bloafers?\b/,["Shoes","Loafers"]],[/\b(heels|pumps|stilettos?)\b/,["Shoes","Heels"]],
+    [/\b(sandals?|slides)\b/,["Shoes","Sandals"]],[/\b(flats|ballet|ballerinas?)\b/,["Shoes","Flats"]],[/\btights\b/,["Legwear","Tights"]],[/\bsocks\b/,["Legwear","Socks"]],
+    [/\bbralette\b/,["Underlayer","Bralette"]],[/\bslip\b/,["Underlayer","Slip"]],[/\b(tote)\b/,["Bag","Tote"]],[/\b(clutch)\b/,["Bag","Clutch"]],[/\bcrossbody\b/,["Bag","Crossbody"]],[/\b(bag|handbag)\b/,["Bag","Handbag"]],
+    [/\bbelt\b/,["Accessory","Belt"]],[/\bscarf\b/,["Accessory","Scarf"]],[/\b(necklace|earrings|bracelet|ring)\b/,["Accessory","Jewellery"]]
+  ]);
+  if(ct){r.category=ct[0];r.type=ct[1]}
+  r.fit=first([[/bodycon|tight[- ]fit|skin[- ]?tight|figure[- ]hugging|second[- ]skin|sculpt/,"Tight"],[/oversize/,"Oversized"],[/relaxed|loose|boxy|flowy|easy fit/,"Relaxed"],[/slim[- ]fit|fitted|close[- ]fit|regular fit/,"Fitted"]]);
+  r.stretch=first([[/non[- ]?stretch|no stretch|rigid/,"None"],[/slight stretch|some stretch|comfort stretch/,"Some"],[/stretch|elastane|spandex|lycra/,"Stretchy"]]);
+  const lenD=first([[/\bmaxi\b/,"Maxi"],[/\bmidi\b/,"Midi"],[/\bmini\b/,"Mini"],[/knee[- ]length/,"Knee"]]);
+  r.dressLength=lenD;
+  r.bottomLength=first([[/\bmaxi\b/,"Maxi"],[/\bmidi\b/,"Midi"],[/\bmini\b/,"Mini"],[/knee[- ]length/,"Knee"],[/cropped|ankle[- ]length|7\/8/,"Cropped / ankle"],[/full[- ]length/,"Full length"],[/\bshorts\b/,"Shorts"]]);
+  r.topLength=first([[/cropped|crop top/,"Cropped"],[/longline|tunic/,"Long / tunic"],[/hip[- ]length/,"Hip"],[/waist[- ]length/,"Waist"]]);
+  r.outerLength=first([[/cropped/,"Cropped"],[/longline|long coat|maxi|ankle[- ]length|full[- ]length/,"Long"],[/mid[- ]thigh|knee[- ]length/,"Mid-thigh"],[/hip[- ]length/,"Hip"]]);
+  r.neckline=first([[/square neck/,"Square"],[/sweetheart/,"Sweetheart"],[/v[- ]neck|plunge/,"V-neck"],[/scoop/,"Scoop"],[/crew[- ]?neck|round neck/,"Round"],[/boat neck|bateau/,"Boat"],[/turtle ?neck|mock neck|high neck|funnel neck|roll neck/,"High / turtleneck"],[/collar/,"Collar"],[/off[- ](the[- ])?shoulder|strapless|bandeau/,"Off-shoulder / strapless"]]);
+  r.sleeves=first([[/strapless|bandeau/,"Strapless"],[/spaghetti|thin straps?|skinny straps?|cami straps?|slim straps?/,"Thin straps"],[/wide straps?|thick straps?|tank straps?/,"Thick straps"],[/sleeveless/,"Sleeveless"],[/3\/4|three[- ]quarter/,"3/4"],[/long[- ]sleeve/,"Long"],[/short[- ]sleeve|cap sleeve/,"Short"]]);
+  r.material=all([[/\bcashmere\b/,"Cashmere"],[/\b(merino|wool|woollen|wool-blend)\b/,"Wool"],[/\blinen\b/,"Linen"],[/\bsatin\b/,"Satin"],[/\bsilk\b/,"Silk"],[/\bchiffon\b/,"Chiffon"],[/\blace\b/,"Lace"],[/\bmesh\b/,"Mesh"],[/\bvelvet\b/,"Velvet"],[/\bcorduroy\b/,"Corduroy"],[/\btweed\b/,"Tweed"],[/\bsequins?\b/,"Sequin"],[/\bsuede\b/,"Suede"],[/\b(faux|vegan) leather\b/,"Faux leather"],[/\bleather\b/,"Leather"],[/\bdenim\b/,"Denim"],[/\bjersey\b/,"Jersey"],[/\b(knit|knitted|ribbed)\b/,"Knit"],[/\b(cotton|poplin)\b/,"Cotton"],[/\bpolyester\b/,"Polyester"],[/\b(nylon|technical|performance|sweat[- ]wicking)\b/,"Technical / sport"]]);
+  r.pattern=all([[/stripe/,"Stripes"],[/check|plaid|gingham|houndstooth|tartan/,"Checks / plaid"],[/floral|flower/,"Floral"],[/polka|dotted/,"Polka dot"],[/leopard|zebra|snake|animal print/,"Animal print"],[/logo|graphic/,"Graphic / logo"],[/\bprint(ed)?\b/,"Abstract print"]]);
+  r.sheer=first([[/semi[- ]sheer/,"Semi-sheer"],[/sheer|see[- ]through|transparent|mesh/,"Sheer"],[/\blace\b/,L.includes("lined")?"Opaque":"Semi-sheer"],[/fully lined|opaque/,"Opaque"]]);
+  r.rise=first([[/high[- ](rise|waist)/,"High"],[/mid[- ](rise|waist)/,"Mid"],[/low[- ](rise|waist)/,"Low"]]);
+  r.closure=all([[/elastic(ated)? waist/,"Elastic"],[/drawstring/,"Drawstring"],[/wrap|tie[- ]waist/,"Wrap / tie"],[/zip/,"Zip"],[/button|fly/,"Buttons"]]);
+  r.silhouette=first([[/wide[- ]leg|palazzo/,"Wide leg"],[/straight[- ](leg|fit)/,"Straight"],[/skinny|slim[- ]leg/,"Slim / skinny"],[/flare|bootcut|boot[- ]cut/,"Flared / bootcut"],[/tapered/,"Tapered"],[/barrel|balloon/,"Barrel"],[/a[- ]line/,"A-line"],[/pencil/,"Pencil"],[/pleat/,"Pleated"],[/wrap/,"Wrap"],[/bias|slip skirt/,"Slip / bias"]]);
+  r.rainproof=has(/waterproof|water[- ]resistant|water[- ]repellent|rain/)?"Yes":undefined;
+  r.heel=first([[/block heel|kitten|low heel/,"Low"],[/stiletto|high heel|\bheels?\b/,"High"],[/\bflat/,"Flat"]]);
+  r.toe=first([[/open[- ]toe|peep[- ]toe|sandal|slide/,"Open"],[/closed[- ]toe|pointed toe|round toe|almond toe/,"Closed"]]);
+  const den=L.match(/(\d+)\s?den/);r.opacity=den?(+den[1]>=40?"Opaque":"Sheer"):first([[/opaque/,"Opaque"],[/sheer/,"Sheer"]]);
+  const wv=first([[/padded|\bdown\b|puffer|fleece|shearling|thermal|heavyweight|chunky|insulated/,3],[/cashmere|merino|wool/,3],[/linen|chiffon|mesh|lightweight|breezy|airy/,1],[/knit|sweater|jumper/,2]]);
+  if(wv!=null)r.warmth=wv;
+  const hits=[];
+  for(const [w,c] of COLOR_WORDS){const re=new RegExp("\\b"+w.replace(/[-/]/g,"[- ]")+"\\b");const m=re.exec(L);if(m)hits.push([m.index,c])}
+  const found=[];hits.sort((a,b)=>a[0]-b[0]).forEach(([,c])=>{if(!found.includes(c))found.push(c)});
+  if(found[0])r.color=found[0];if(found.length>1)r.colors2=found.slice(1,4);
+  const occ=[];if(has(/workout|gym|yoga|pilates|training|athletic|sport/))occ.push("Sport");
+  if(has(/office|work(wear)?\b|tailored/))occ.push("Office");if(has(/evening|occasion|party|wedding/))occ.push("Going out");
+  if(occ.length)r.formality=occ;
+  const b=text.replace(/[’]/g,"'").match(/\b([A-Z][\w&.-]+(?:\s[A-Z][\w&.-]+)?)'s\s+(signature|own|iconic|exclusive|best[- ]selling|classic|original|bestselling)/);
+  if(b)r.brand=b[1];
+  for(const k of Object.keys(r))if(r[k]===undefined)delete r[k];
+  return r;
+}
+function applyParsed(d,p){
+  let n=0;
+  if(!d.category&&p.category){d.category=p.category;n++}
+  if(!d.type&&p.type&&p.category===d.category){d.type=p.type;n++}
+  const allowed=new Set([...(LAYOUT[d.category]||[]),"color","brand","warmth","formality"]);
+  if(!allowed.has("colors2")&&p.colors2)delete p.colors2;
+  for(const [k,v] of Object.entries(p)){
+    if(k==="category"||k==="type"||!allowed.has(k))continue;
+    if(k==="formality"||MULTI_FIELDS.includes(k)){const cur=arr(d[k]);const add=v.filter(x=>!cur.includes(x)&&x!==d.color);if(add.length){d[k]=[...cur,...add];n+=add.length}continue}
+    if(d[k]==null||d[k]===""){d[k]=v;n++}
+  }
+  return n;
+}
+
+/* ================= outfit rules ================= */
+function fitsOccasion(it){return NO_OCCASION.has(it.category)||ui.occasion==="Any"||(it.formality||[]).includes(ui.occasion)}
+function fitsWeather(it){
+  if(it.season&&it.season.length&&!WEATHER_SEASON[ui.weather].some(s=>it.season.includes(s)))return false;
+  if(it.category==="Bag"||it.category==="Accessory"||it.category==="Underlayer")return true;
+  const max=MAXPIECE[ui.weather]+(it.category==="Bottom"?1:0);
+  if(W(it)>Math.min(3,max))return false;
+  if(it.category==="Shoes"){
+    if(it.toe==="Open"&&(ui.weather==="Cool"||ui.weather==="Cold"||ui.rain))return false;
+  }
+  if(it.category==="Outerwear"&&ui.weather==="Hot")return false;
+  return true;
+}
+function canUnderDress(u,d){
+  if(u.noLayer||d.noLayer||!u.sleeves||!d.sleeves||d.sleeves==="Strapless")return false;
+  if(!["T-shirt","Tank / cami","Shirt / blouse","Knit / sweater","Bodysuit","Other",""].includes(u.type||""))return false;
+  if(d.fit==="Tight"){if(d.stretch!=="Stretchy"||!["Tight","Fitted"].includes(u.fit)||W(u)>1)return false}
+  else if(d.fit==="Oversized"||d.fit==="Relaxed"){if(u.fit==="Oversized"||W(u)>2)return false}
+  else if(!["Tight","Fitted"].includes(u.fit)||W(u)>1)return false;
+  const sleeveShows=SLEEVE_RANK[u.sleeves]>SLEEVE_RANK[d.sleeves];
+  const neckShows=u.neckline&&d.neckline&&NECK_RANK[u.neckline]>NECK_RANK[d.neckline];
+  return sleeveShows||neckShows;
+}
+function canTopUnderTop(u,o){
+  if(u.id===o.id||u.noLayer||o.noLayer||!u.sleeves||!o.sleeves)return false;
+  if(!["Knit / sweater","Sweater vest"].includes(o.type))return false;
+  if(o.fit==="Tight"||["Knit / sweater","Sweater vest"].includes(u.type))return false;
+  const snug=["Tight","Fitted"].includes(u.fit)||((o.fit==="Relaxed"||o.fit==="Oversized")&&u.fit!=="Oversized");
+  if(!snug)return false;
+  if(W(u)>(u.type==="Shirt / blouse"?2:1))return false;
+  const sleeveShows=SLEEVE_RANK[u.sleeves]>SLEEVE_RANK[o.sleeves];
+  const neckShows=u.neckline&&o.neckline&&NECK_RANK[u.neckline]>NECK_RANK[o.neckline];
+  const hemShows=o.topLength==="Cropped"&&u.topLength&&u.topLength!=="Cropped";
+  return sleeveShows||neckShows||hemShows;
+}
+function layerReason(u,o){
+  if(SLEEVE_RANK[u.sleeves]>SLEEVE_RANK[o.sleeves])return `The ${u.name}'s ${u.sleeves.toLowerCase()} ${u.sleeves==="Long"||u.sleeves==="Short"?"sleeves show":"show"} under the ${o.name}, so the layer looks deliberate.`;
+  if(u.neckline&&o.neckline&&NECK_RANK[u.neckline]>NECK_RANK[o.neckline])return `The ${u.name}'s ${u.neckline.toLowerCase()} peeks out above the ${o.name}.`;
+  return `The ${u.name} shows below the cropped ${o.name}.`;
+}
+function outfitWarmth(o){
+  let t=0;
+  for(const i of o){
+    if(i.category==="Dress")t+=W(i)*1.5;
+    else if(i.category==="Top"||i.category==="Bottom"||i.category==="Outerwear")t+=W(i);
+    else if(i.category==="Legwear"&&i.type==="Tights")t+=i.opacity==="Opaque"?1:0.5;
+  }
+  return t;
+}
+function seenSets(){
+  const sigs=new Set(),pairs=new Set();
+  const add=ids=>{
+    sigs.add(sig(ids));
+    const mains=ids.filter(id=>MAIN.has(S.items.get(id)?.category));
+    for(let a=0;a<mains.length;a++)for(let b=a+1;b<mains.length;b++)pairs.add(sig([mains[a],mains[b]]));
+  };
+  S.outfits.forEach(o=>add(o.itemIds||[]));S.log.forEach(e=>add(e.itemIds||[]));
+  const rejected=new Set();S.passes.forEach(p=>rejected.add(sig(p.itemIds||[])));
+  return {sigs,pairs,rejected};
+}
+function suggest(){
+  const w=wearStats();
+  const ready=items().filter(i=>!i.needsTags&&(ui.tripMode||available(i)));
+  const anchor=ui.anchor&&S.items.get(ui.anchor);
+  const pool=ready.filter(i=>(fitsOccasion(i)&&fitsWeather(i))||(anchor&&i.id===anchor.id));
+  const by=(c,f)=>pool.filter(i=>i.category===c&&(!f||f(i)));
+  const tops=by("Top"),bottoms=by("Bottom"),dresses=by("Dress");
+  const mids=by("Outerwear",i=>MID.has(i.type)),outers=by("Outerwear",i=>!MID.has(i.type));
+  let shoes=by("Shoes");if(ui.occasion==="Sport"&&shoes.some(s=>s.type==="Sneakers"))shoes=shoes.filter(s=>s.type==="Sneakers");
+  const bags=by("Bag"),accs=by("Accessory"),tights=by("Legwear",i=>i.type==="Tights"),socks=by("Legwear",i=>i.type==="Socks"),unders=by("Underlayer");
+  const neg=it=>isNeglected(it,w.get(it.id));
+  const choose=list=>{
+    if(!list.length)return null;
+    if(!ui.neglect)return pickRand(list);
+    const ws=list.map(i=>neg(i)?3:1),tot=ws.reduce((a,b)=>a+b,0);let r=Math.random()*tot;
+    for(let i=0;i<list.length;i++){r-=ws[i];if(r<=0)return list[i]}return list[list.length-1];
+  };
+  let bases=[];dresses.forEach(d=>bases.push([d]));tops.filter(t=>t.type!=="Sweater vest"||anchor===t).forEach(t=>bottoms.forEach(b=>bases.push([t,b])));
+  if(anchor&&["Top","Bottom","Dress"].includes(anchor.category)&&!["Knit / sweater","Sweater vest"].includes(anchor.type))bases=bases.filter(b=>b.includes(anchor));
+  if(anchor&&["Knit / sweater","Sweater vest"].includes(anchor.type)){
+    const withIt=bases.filter(b=>b.includes(anchor));
+    const under=tops.filter(t=>canTopUnderTop(t,anchor)).flatMap(t=>bottoms.map(b=>[t,b]));
+    bases=[...withIt,...under.map(b=>[...b,{__over:anchor}])];
+  }
+  bases=shuffle(bases).slice(0,400);
+  const {sigs,pairs,rejected}=seenSets();
+  const recent=new Map();const cut=Date.now()-7*864e5;
+  S.log.forEach(e=>{if(dayMs(e.date)>=cut)(e.itemIds||[]).forEach(id=>recent.set(id,true))});
+  const [minW,maxW]=RANGE[ui.weather];
+  const cands=[];
+  for(const rawBase of bases)for(let t=0;t<3;t++){
+    const forcedOver=rawBase.find(x=>x&&x.__over)?.__over;
+    const base=rawBase.filter(x=>!x.__over);
+    const o=[...base];const notes=[];const tips=[];let layered=false;
+    const dress=base.find(i=>i.category==="Dress");
+    const top=base.find(i=>i.category==="Top");const bottom=base.find(i=>i.category==="Bottom");
+    // layering
+    if(ui.weather!=="Hot"&&ui.weather!=="Warm"){
+      if(dress){
+        const opts=tops.filter(u=>canUnderDress(u,dress));
+        const force=anchor&&anchor.category==="Top"&&opts.includes(anchor);
+        if(opts.length&&(force||Math.random()<.35)){const u=force?anchor:choose(opts);o.push(u);layered=true;notes.push(layerReason(u,dress))}
+      }else if(top){
+        if(forcedOver){o.push(forcedOver);layered=true;notes.push(layerReason(top,forcedOver))}
+        else{
+          const overs=tops.filter(ov=>canTopUnderTop(top,ov));
+          if(overs.length&&Math.random()<.3){const ov=choose(overs);o.push(ov);layered=true;notes.push(layerReason(top,ov))}
+        }
+      }
+    }
+    // sheer pieces need an underlayer
+    for(const p of [...o]){
+      if(p.sheer==="Sheer"||p.sheer==="Semi-sheer"){
+        const want=p.category==="Bottom"?["Bike shorts","Slip"]:p.category==="Dress"?["Slip","Bodysuit"]:["Camisole","Bralette","Bodysuit"];
+        const u=unders.filter(x=>want.includes(x.type));
+        if(u.length)o.push(choose(u));else tips.push(`The ${p.name} is sheer: wear ${p.category==="Bottom"?"shorts or a slip":p.category==="Dress"?"a slip":"a camisole or bralette"} underneath.`);
+      }
+    }
+    // warmth and coverage: first layers and jackets
+    const isCold=ui.weather==="Cold",isCool=ui.weather==="Cool",chilly=isCool||isCold;
+    const coverWeather=ui.weather==="Mild"||chilly;
+    let tw=outfitWarmth(o);
+    const forcedOuter=anchor&&anchor.category==="Outerwear"?anchor:null;
+    const isOuter=i=>i.category==="Outerwear"&&!MID.has(i.type);
+    const hasMid=()=>o.some(i=>i.category==="Outerwear"&&MID.has(i.type)),hasOuter=()=>o.some(isOuter);
+    const addOuter=required=>{
+      let cand=outers.filter(m=>outfitWarmth([...o,m])<=maxW);if(!cand.length&&required)cand=outers;
+      if(isCold&&cand.some(m=>W(m)>=2))cand=cand.filter(m=>W(m)>=2);
+      if(ui.rain&&cand.some(m=>m.rainproof==="Yes"))cand=cand.filter(m=>m.rainproof==="Yes");
+      if(cand.length){o.push(choose(cand));tw=outfitWarmth(o)}
+    };
+    const addMid=required=>{let cand=mids.filter(m=>outfitWarmth([...o,m])<=maxW);if(!cand.length&&required)cand=mids;if(cand.length){o.push(choose(cand));tw=outfitWarmth(o)}};
+    if(forcedOuter){o.push(forcedOuter);tw=outfitWarmth(o)}
+    // bare arms = straps, strapless, sleeveless or short sleeves as the most covered piece
+    const armRank=()=>{const rs=o.filter(i=>i.category==="Top"||i.category==="Dress").map(i=>i.sleeves?SLEEVE_RANK[i.sleeves]:99);return rs.length?Math.max(...rs):99};
+    const bare=coverWeather&&armRank()<=3;
+    const firstLayer=()=>layered||hasMid();
+    // try a top underneath first for strappy and sleeveless dresses, otherwise a cardigan or blazer
+    if(bare&&!firstLayer()){
+      const u=dress&&SLEEVE_RANK[dress.sleeves]<=2?tops.filter(x=>canUnderDress(x,dress)):[];
+      if(u.length&&(!mids.length||Math.random()<.5)){const x=choose(u);o.push(x);layered=true;notes.push(layerReason(x,dress));tw=outfitWarmth(o)}
+      else if(mids.length&&!(forcedOuter&&!MID.has(forcedOuter.type)&&!chilly))addMid(true);
+    }
+    // cool and cold always get a jacket or coat
+    if(!hasOuter()&&outers.length&&(chilly||(ui.rain&&ui.weather!=="Hot")))addOuter(chilly);
+    // optional extra first layer when it's still light enough, or needed for warmth
+    const topLayered=layered&&!dress;
+    const midChance=ui.weather==="Mild"?.3:isCool?(hasOuter()?.2:.5):0;
+    if(!hasMid()&&mids.length&&(tw<minW||(!topLayered&&!bare&&Math.random()<midChance)))addMid(false);
+    if(!hasOuter()&&outers.length&&tw<minW)addOuter(false);
+    // coverage checks: skip outfits that leave arms bare
+    if(bare){
+      if(ui.weather==="Mild"&&!(firstLayer()||hasOuter()))continue;
+      if(chilly&&!firstLayer()&&(mids.length||dress))continue;
+    }
+    if(chilly&&outers.length&&!hasOuter())continue;
+    if(chilly&&!outers.length&&!tips.includes("jacket"))tips.push("Add a jacket or coat on top: none are tagged for this weather yet.");
+    // tights with dresses and skirts when it's cool
+    const legsOut=dress?dress.dressLength!=="Maxi":bottom&&(bottom.type==="Skirt"||bottom.type==="Shorts")&&bottom.bottomLength!=="Maxi";
+    if(legsOut&&tights.length&&!(anchor&&anchor.category==="Legwear")){
+      const wantT=ui.weather==="Cold"||ui.weather==="Cool"?.85:(ui.weather==="Mild"&&["Office","Elegant","Business travel"].includes(ui.occasion))?.3:0;
+      if(Math.random()<wantT){
+        let tl=tights;if(ui.weather==="Cold"&&tl.some(x=>x.opacity==="Opaque"))tl=tl.filter(x=>x.opacity==="Opaque");
+        o.push(choose(tl));tw=outfitWarmth(o);
+      }
+    }
+    if(anchor&&anchor.category==="Legwear")o.push(anchor);
+    tw=outfitWarmth(o);
+    if(tw<minW||tw>maxW)continue;
+    // shoes, bag, accessory
+    const wearsTights=o.some(i=>i.category==="Legwear"&&i.type==="Tights");
+    let shoeOpts=wearsTights?shoes.filter(s=>s.toe!=="Open"):shoes;
+    if(anchor&&anchor.type==="Socks")shoeOpts=shoeOpts.filter(s=>s.type==="Loafers");
+    if(anchor&&anchor.category==="Shoes")o.push(anchor);else if(shoeOpts.length)o.push(choose(shoeOpts));
+    // socks: only with loafers, never with tights
+    const shoe=o.find(i=>i.category==="Shoes");
+    if(shoe&&shoe.type==="Loafers"&&!wearsTights&&!(anchor&&anchor.type==="Socks")&&socks.length){const sk=choose(socks);o.push(sk);tips.push(`Show the ${sk.name} with the ${shoe.name}.`)}
+    if(anchor&&anchor.category==="Bag")o.push(anchor);else if(bags.length&&Math.random()<.4)o.push(choose(bags));
+    if(anchor&&anchor.category==="Accessory")o.push(anchor);else if(accs.length&&Math.random()<.3)o.push(choose(accs));
+    if(anchor&&anchor.category==="Underlayer"&&!o.includes(anchor))o.push(anchor);
+    const uniq=[...new Set(o.filter(Boolean))];
+    const ids=uniq.map(i=>i.id);const s=sig(ids);
+    if((!ui.tripMode&&sigs.has(s))||rejected.has(s)||(ui.extraExclude&&ui.extraExclude.has(s)))continue;
+    if(anchor&&!ids.includes(anchor.id))continue;
+    cands.push(scoreOutfit(uniq,ids,s,{w,pairs,recent,notes,tips,layered,tw}));
+  }
+  cands.sort((a,b)=>b.score-a.score);
+  const picked=[],used=new Set();
+  for(const c of cands){
+    if(used.has(c.s))continue;
+    const m=c.o.filter(i=>MAIN.has(i.category)&&i.category!=="Outerwear").map(i=>i.id);
+    const clash=picked.some(p=>{const pm=p.o.filter(i=>MAIN.has(i.category)&&i.category!=="Outerwear").map(i=>i.id);const shared=m.filter(id=>pm.includes(id)).length;return anchor?shared>=m.length:shared>=Math.min(2,m.length)});
+    if(clash)continue;
+    if(!anchor&&m.some(id=>picked.filter(p=>p.ids.includes(id)).length>=2))continue;
+    picked.push(c);used.add(c.s);if(picked.length===3)break;
+  }
+  return picked.map(c=>({title:c.title,itemIds:c.ids,why:c.why,tips:c.tips,saved:false}));
+}
+/* ---------- colour knowledge ---------- */
+const TONE={
+  "warm neutrals":["Ivory","Cream","Beige","Taupe","Camel","Brown","Chocolate","Khaki"],
+  "greys":["Black","Charcoal","Grey","White","Silver"],
+  "blues":["Navy","Denim","Blue","Light blue","Teal"],
+  "greens":["Olive","Khaki","Green","Mint"],
+  "reds and pinks":["Burgundy","Red","Pink","Blush","Rust"],
+  "purples":["Lilac","Purple"]
+};
+const LIGHT=new Set(["White","Ivory","Cream","Beige","Mint","Light blue","Lilac","Blush","Yellow","Silver"]);
+const DARK=new Set(["Black","Charcoal","Navy","Chocolate","Burgundy","Brown","Purple","Olive","Teal"]);
+const PAIRS=[
+  ["Navy","Camel","a classic, deep and warm balance each other"],["Navy","White"],["Navy","Cream","softer than navy and white"],["Navy","Red"],["Navy","Light blue","tonal blues look intentional"],["Navy","Blush"],["Navy","Burgundy","two deep shades, rich but quiet"],["Navy","Yellow"],["Navy","Grey"],["Navy","Green"],["Navy","Mint"],
+  ["Black","White","a sharp, classic contrast"],["Black","Camel"],["Black","Red"],["Black","Cream"],["Black","Pink"],["Black","Gold"],["Black","Blush"],
+  ["Camel","White"],["Camel","Cream","tonal and expensive-looking"],["Camel","Denim"],["Camel","Burgundy"],["Camel","Olive"],["Camel","Light blue"],["Camel","Grey"],["Camel","Teal"],["Charcoal","Camel"],
+  ["Olive","Rust","earthy and warm"],["Olive","Cream"],["Olive","Blush","soft pink lifts the olive"],["Olive","Denim"],["Olive","White"],
+  ["Burgundy","Blush","same family, different depth"],["Burgundy","Pink"],["Burgundy","Grey"],["Burgundy","Denim"],["Burgundy","Cream"],
+  ["Rust","Denim"],["Rust","Cream"],["Rust","Navy"],["Rust","Teal","complementary and bold"],
+  ["Grey","Pink"],["Grey","Lilac"],["Grey","Yellow"],["Grey","White"],
+  ["Denim","White"],["Denim","Red"],["Denim","Yellow"],["Denim","Pink"],["Denim","Cream"],
+  ["Blue","Yellow","complementary and bold"],["Blue","Pink"],["Blue","Orange","complementary and bold"],["Blue","White"],
+  ["Green","Pink","complementary and bold"],["Green","Cream"],
+  ["Pink","Red","same family, a confident clash"],["Pink","Orange"],["Red","Blush"],
+  ["Lilac","Mint","soft pastels"],["Lilac","Cream"],["Lilac","Denim"],
+  ["Chocolate","Light blue","warm and cool, very polished"],["Brown","Light blue"],["Chocolate","Pink"],["Chocolate","Cream"],["Brown","Cream"],["Brown","Blush"],
+  ["Yellow","White"],["Taupe","White"],["Beige","White"],["Beige","Navy"]
+];
+const PAIR_MAP=new Map();for(const [a,b,note] of PAIRS){PAIR_MAP.set(a+"|"+b,note||"");PAIR_MAP.set(b+"|"+a,note||"")}
+function colourRead(visible,mains){
+  const cols=[...new Set(visible.flatMap(i=>[i.color,...arr(i.colors2)]).filter(Boolean))];
+  const mainCols=[...new Set(mains.flatMap(i=>[i.color,...arr(i.colors2)]).filter(Boolean))];
+  let score=0,line="";
+  const fams=new Set();const accents=[];
+  for(const c of cols)if(!NEUTRAL.has(c)&&!NEAR.has(c)&&!fams.has(FAMILY[c]||c)){fams.add(FAMILY[c]||c);accents.push(c)}
+  // proven pairs: prefer pairs that involve an accent, then main pieces
+  let best=null;
+  for(let a=0;a<cols.length;a++)for(let b=a+1;b<cols.length;b++){
+    const k=cols[a]+"|"+cols[b];if(!PAIR_MAP.has(k))continue;
+    const w=(accents.includes(cols[a])||accents.includes(cols[b])?2:0)+(mainCols.includes(cols[a])&&mainCols.includes(cols[b])?1:0);
+    if(!best||w>best.w)best={a:cols[a],b:cols[b],note:PAIR_MAP.get(k),w};
+  }
+  // tonal: every main piece in one tone group, at least 2 shades
+  let tonal=null;
+  const bw=mainCols.length>=2&&mainCols.every(c=>c==="Black"||c==="White");
+  if(mains.length>=2&&!bw)for(const [g,list] of Object.entries(TONE)){if(mainCols.length&&mainCols.every(c=>list.includes(c))){
+    if(g==="greys"&&!mainCols.some(c=>c==="Grey"||c==="Charcoal"||c==="Silver"))continue;
+    tonal={g,shades:mainCols};break}}
+  const mono=mains.length>=2&&mainCols.length===1;
+  if(fams.size>=3){score-=2.5}
+  else if(mono){score+=1.2;line=`All ${mainCols[0].toLowerCase()}: mix textures so it doesn't fall flat.`}
+  else if(tonal&&tonal.shades.length>=2){score+=2.2;line=`Tonal ${tonal.g}: ${tonal.shades.map(c=>c.toLowerCase()).join(", ")} layered together reads polished.`}
+  else if(best){
+    score+=fams.size===1?2.3:1.8;
+    line=`${cap(best.a.toLowerCase())} with ${best.b.toLowerCase()}${best.note?": "+best.note:" is a proven pairing"}.`;
+  }
+  else if(fams.size===0){score+=1.2;line="All neutrals, so a bold accessory or lip colour will lift it."}
+  else if(fams.size===1){score+=2;line=`Neutral base with ${accents[0].toLowerCase()} as the one accent.`}
+  else{line=`Two colours, ${accents.map(c=>c.toLowerCase()).join(" and ")}: keep everything else plain.`}
+  // contrast and undertone, light touch
+  const lights=mainCols.filter(c=>LIGHT.has(c)).length,darks=mainCols.filter(c=>DARK.has(c)).length;
+  if(!mono&&lights&&darks)score+=.3;
+  if(!mono&&!tonal&&mainCols.length>=2&&darks===mainCols.length)score-=.5;
+  if(mainCols.includes("Black")&&(mainCols.includes("Brown")||mainCols.includes("Chocolate"))&&!best)score-=.4;
+  return {score,line};
+}
+function scoreOutfit(o,ids,s,ctx){
+  const {w,pairs,recent,notes,tips,layered}=ctx;
+  const neg=it=>isNeglected(it,w.get(it.id));
+  const mains=o.filter(i=>MAIN.has(i.category));
+  let newPairs=0,total=0;
+  for(let a=0;a<mains.length;a++)for(let b=a+1;b<mains.length;b++){total++;if(!pairs.has(sig([mains[a].id,mains[b].id])))newPairs++}
+  let score=newPairs*1.5+(total&&newPairs===total?1:0);
+  const why=[];
+  why.push(total&&newPairs===total?"You haven't worn or saved these pieces together.":"A new mix around pieces you already wear together.");
+  // colour
+  const visible=o.filter(i=>i.category!=="Underlayer");
+  const cr=colourRead(visible,mains);
+  score+=cr.score;if(cr.line)why.push(cr.line);
+  // patterns
+  const patterned=o.filter(i=>MAIN.has(i.category)||i.category==="Legwear").filter(i=>arr(i.pattern).some(p=>p!=="Solid"));
+  if(patterned.length>1)score-=2.5;
+  // proportions
+  const tp=o.filter(i=>i.category==="Top");const outerTop=tp[tp.length-1];const bottom=o.find(i=>i.category==="Bottom");
+  const dress=o.find(i=>i.category==="Dress");const outer=o.find(i=>i.category==="Outerwear"&&!MID.has(i.type))||o.find(i=>i.category==="Outerwear");
+  if(outerTop&&bottom){
+    if(outerTop.topLength==="Cropped"){if(bottom.rise==="High")score+=1;else if(bottom.rise==="Low")score-=1.5}
+    const wideB=["Wide leg","Barrel","Flared / bootcut"].includes(bottom.silhouette)||bottom.fit==="Oversized";
+    const slimB=["Slim / skinny","Pencil"].includes(bottom.silhouette)||bottom.fit==="Tight";
+    if(outerTop.fit==="Oversized"&&wideB)score-=1.5;
+    if(outerTop.fit==="Oversized"&&slimB){score+=1;why.push("Oversized on top, slim below keeps the proportions balanced.")}
+    if(["Tight","Fitted"].includes(outerTop.fit)&&wideB){score+=1;why.push(`The fitted top balances the ${(bottom.silhouette||"").toLowerCase()||"wide"} shape.`)}
+    if(outerTop.topLength==="Long / tunic"&&bottom.rise==="High"&&outerTop.fit!=="Tight")tips.push(`Tuck the ${outerTop.name} in, or front-tuck it, to show the high waist.`);
+    if(arr(bottom.closure).some(c=>c==="Elastic"||c==="Drawstring")&&["Office","Elegant","Business travel"].includes(ui.occasion))score-=1;
+  }
+  if(outer){
+    const len=dress?dress.dressLength:bottom?bottom.bottomLength:null;
+    if(outer.outerLength==="Long"&&(len==="Mini"||len==="Shorts"))score+=.5;
+    if(outer.outerLength==="Cropped"&&len==="Maxi")score-=.5;
+    if(outer.outerLength==="Cropped"&&bottom&&bottom.rise==="High")score+=.5;
+    if(ui.rain&&outer.rainproof==="Yes"){score+=1.5;tips.push(`The ${outer.name} handles the rain.`)}
+    if(outer.wornOpen==="Closed"&&layered)score-=.5;
+  }
+  // texture
+  const mats=mains.flatMap(i=>arr(i.material));
+  const sm=mats.find(m=>SMOOTH.has(m)),tx=mats.find(m=>TEXTURED.has(m));
+  if(sm&&tx){score+=.5;why.push(`${sm} against ${tx.toLowerCase()} adds texture contrast.`)}
+  if(layered){score+=.8;why.push(...notes)}
+  // neglect, recency, randomness
+  const negs=o.filter(neg);
+  if(ui.neglect&&negs.length){
+    score+=negs.length*2;
+    const n=[...negs].sort((a,b)=>(MAIN.has(b.category)?1:0)-(MAIN.has(a.category)?1:0));
+    const names=n.slice(0,2).map(i=>i.name).join(" and ")+(n.length>2?` plus ${n.length-2} more`:"");
+    why.push(`Brings back your ${names}, unworn for ${Math.min(...n.map(i=>daysSince(i,w.get(i.id))))}+ days.`);
+  }
+  if(!ui.tripMode)for(const i of o)if(recent.has(i.id))score-=1/(i.qty||1);
+  if(ui.packBoost&&ui.packBoost.size)for(const i of o){
+    const n=ui.packBoost.get(i.id)||0,q=i.qty||1;
+    if(["Shoes","Outerwear","Bag","Accessory"].includes(i.category))score+=n?3:-1.5;
+    else if(i.category==="Bottom")score+=n>=3*q?-1.5:n?2:-.5;
+    else if(i.category==="Top"||i.category==="Dress")score+=n>=2*q?-3:n?.5:0;
+    else if(n)score+=.5;
+  }
+  if(ui.avoidMain)for(const i of o)if(ui.avoidMain.has(i.id)&&(i.category==="Top"||i.category==="Dress"||i.category==="Bottom"))score-=2.5;
+  score+=Math.random()*1.5;
+  const tn=o.filter(i=>(i.category==="Top"||i.category==="Bottom"||i.category==="Dress")).map(i=>i.name);
+  const title=cap(tn.join(" + "));
+  return {o,ids,s,score,title:title.length>52?title.slice(0,50)+"…":title,why:why.join(" "),tips};
+}
+const briefKey=()=>[ui.occasion,ui.weather,ui.rain,ui.anchor||""].join("|");
+function refreshIfStale(){if(ui.results.length&&ui.resultsKey!==briefKey())generate();else render()}
+function generate(){
+  ui.err="";ui.results=suggest();ui.resultsKey=briefKey();
+  if(!ui.results.length){
+    ui.err=ui.anchor?"Nothing new fits this brief with that piece. Try another occasion or weather."
+      :"No new combinations fit this brief. Try another occasion or weather, or check that pieces are tagged for it.";
+  }
+  render();
+}
+
+/* ================= live forecast (Open-Meteo, phone location) ================= */
+const FC={data:null,at:0,status:"idle"};
+const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+function weatherFromTemp(t){return t>=26?"Hot":t>=20?"Warm":t>=14?"Mild":t>=7?"Cool":"Cold"}
+function getPos(){return new Promise((res,rej)=>{if(!navigator.geolocation)return rej({code:2});navigator.geolocation.getCurrentPosition(p=>res(p.coords),rej,{maximumAge:36e5,timeout:15000,enableHighAccuracy:false})})}
+function loadCachedForecast(){try{const c=JSON.parse(lsGet("closet-fc")||"null");if(c&&Date.now()-c.at<12*36e5){FC.data=c.data;FC.at=c.at;FC.status="ok"}}catch(e){}}
+async function loadForecast(force){
+  if(FC.status==="loading")return;
+  if(!force&&FC.data&&Date.now()-FC.at<36e5){applyForecast();return}
+  if(!navigator.onLine){if(!FC.data)FC.status="offline";applyForecast();render();return}
+  FC.status="loading";render();
+  try{
+    const c=await getPos();
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${c.latitude.toFixed(3)}&longitude=${c.longitude.toFixed(3)}&hourly=apparent_temperature,precipitation_probability&timezone=auto&forecast_days=7`;
+    const r=await fetch(url);if(!r.ok)throw {code:9};
+    const j=await r.json();if(!j.hourly)throw {code:9};
+    FC.data=j.hourly;FC.at=Date.now();FC.status="ok";lsSet("closet-fc",JSON.stringify({at:FC.at,data:FC.data}));
+  }catch(e){FC.status=FC.data?"ok":(e&&e.code===1?"denied":"error");if(e&&e.code===1)FC.denied=true}
+  applyForecast();render();
+}
+function dateForOffset(n){const d=new Date();d.setDate(d.getDate()+n);return ymd(d)}
+function forecastFor(data,key){
+  if(!data||!data.time)return null;
+  const idx=[];data.time.forEach((t,i)=>{const h=+t.slice(11,13);if(t.startsWith(key)&&h>=8&&h<=19)idx.push(i)});
+  const temps=idx.map(i=>data.apparent_temperature[i]).filter(x=>x!=null);if(!temps.length)return null;
+  const probs=idx.map(i=>data.precipitation_probability[i]).filter(x=>x!=null);
+  const feels=Math.round(temps.reduce((a,b)=>a+b,0)/temps.length);
+  const rain=probs.length?Math.max(...probs):0;
+  return {feels,lo:Math.round(Math.min(...temps)),hi:Math.round(Math.max(...temps)),rain,weather:weatherFromTemp(feels),wet:rain>=50};
+}
+function dayLabel(key){
+  const t=today(),tm=dateForOffset(1);
+  if(key===t)return "Today";if(key===tm)return "Tomorrow";
+  return new Date(dayMs(key)).toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"});
+}
+function dayForecast(){return forecastFor(FC.data,dateForOffset(ui.fcOff||0))}
+function applyForecast(){if(ui.weatherManual)return;const f=dayForecast();if(f){ui.weather=f.weather;ui.rain=f.wet}if(ui.ready&&ui.results.length&&ui.resultsKey!==briefKey()){ui.err="";ui.results=suggest();ui.resultsKey=briefKey()}}
+function forecastHTML(){
+  const day=dayLabel(dateForOffset(ui.fcOff||0));
+  const toggle=`<div class="chips" style="padding-top:0;margin:0 0 8px;padding-left:0;padding-right:0">${[0,1,2,3,4,5,6].map(n=>`<button class="chip" data-act="fcday" data-v="${n}" aria-pressed="${(ui.fcOff||0)===n}">${esc(n<2?(n?"Tomorrow":"Today"):new Date(dayMs(dateForOffset(n))).toLocaleDateString(undefined,{weekday:"short",day:"numeric"}))}</button>`).join("")}</div>`;
+  const f=dayForecast();
+  if(FC.status==="loading"&&!f)return `<div class="fc"><p>Checking the forecast for your location…</p></div>`;
+  if(f){
+    const age=Math.round((Date.now()-FC.at)/6e4);
+    const line=`<p><b>${day}:</b> feels like ${f.feels}°C (${f.lo} to ${f.hi}°), ${f.rain}% chance of rain → <b>${f.weather}${f.wet?" + Rain":""}</b></p>`;
+    const note=ui.weatherManual?`<p class="note" style="margin-top:6px">You've picked the weather yourself. <button class="linkbtn" data-act="usefc">Use the forecast</button></p>`
+      :(age>90?`<p class="note" style="margin-top:6px">Forecast from ${age>=120?Math.round(age/60)+" hours":age+" minutes"} ago. <button class="linkbtn" data-act="refreshfc">Refresh</button></p>`:"");
+    return `<div class="fc">${toggle}${line}${note}</div>`;
+  }
+  if(FC.status==="denied")return `<div class="fc"><p>Location access is off, so pick the weather below. To use the forecast, allow location for this app in your phone's settings, then <button class="linkbtn" data-act="refreshfc">try again</button>.</p></div>`;
+  if(FC.status==="offline")return `<div class="fc"><p>You're offline, so pick the weather below. The forecast comes back when you're online.</p></div>`;
+  if(FC.status==="error")return `<div class="fc"><p>The forecast didn't load. Pick the weather below, or <button class="linkbtn" data-act="refreshfc">try again</button>.</p></div>`;
+  return "";
+}
+
+/* ================= AI chat (online, your own API key) ================= */
+function closetForAI(){
+  const w=wearStats();
+  return items().filter(i=>!i.needsTags&&available(i)).map(it=>{
+    const s=w.get(it.id);
+    const f=[it.id,it.name,it.brand&&"brand: "+it.brand,it.category+(it.type?"/"+it.type:""),"colour: "+[it.color,...arr(it.colors2)].filter(Boolean).join("+"),
+      arr(it.pattern).length&&"pattern: "+arr(it.pattern).join("+"),arr(it.material).length&&"material: "+arr(it.material).join("+"),it.stretch&&"stretch: "+it.stretch,it.warmth!=null&&"warmth: "+WARMTH[it.warmth],
+      it.fit&&"fit: "+it.fit,it.sleeves&&"sleeves: "+it.sleeves,it.neckline&&"neck: "+it.neckline,
+      (it.topLength||it.dressLength||it.bottomLength||it.outerLength)&&"length: "+(it.topLength||it.dressLength||it.bottomLength||it.outerLength),
+      it.silhouette&&"shape: "+it.silhouette,it.rise&&"waist: "+it.rise,arr(it.closure).length&&"closure: "+arr(it.closure).join("+"),it.sheer&&it.sheer!=="Opaque"&&"sheer: "+it.sheer,
+      it.wornOpen&&"worn: "+it.wornOpen,it.rainproof==="Yes"&&"rainproof",it.heel&&"heel: "+it.heel,it.toe&&"toe: "+it.toe,it.opacity&&"opacity: "+it.opacity,
+      it.bagSize&&"size: "+it.bagSize,"occasions: "+((it.formality||[]).join("/")||"any"),it.season&&it.season.length&&"only in: "+it.season.join("/"),
+      it.noLayer&&"never layer",it.qty>1&&"owns "+it.qty,s?`worn ${s.count}x, last ${ago(s.last)}`:"never logged",
+      isNeglected(it,s)&&"NEGLECTED",it.desc&&"shop description: "+it.desc.slice(0,260).replace(/\s+/g," ")].filter(Boolean);
+    return f.join(" | ");
+  }).join("\n");
+}
+function aiSystem(){
+  const list=a=>a.length?a.map(x=>"- "+x.join(",")).join("\n"):"none";
+  const cut=Date.now()-14*864e5;
+  return `You are a sharp, practical personal stylist. Build outfits ONLY from item ids in the wardrobe below (these are the pieces currently available). Today is ${today()}.${(()=>{const f=dayForecast();return f?` Forecast at the owner's location (${dayLabel(dateForOffset(ui.fcOff||0)).toLowerCase()}, daytime): feels like ${f.feels}°C, ${f.rain}% chance of rain. Use this unless the owner says otherwise.`:""})()}
+Rules the owner cares about:
+- Layering: put a top under a dress or under another top only when it shows something the outer piece doesn't cover (sleeves under straps, a collar under a crew neck, a hem under a cropped knit). Never under strapless dresses or tight dresses without stretch. The under layer must be thin and fitted. Never layer pieces marked "never layer".
+- Socks: only suggest them with loafers, where they're part of the look. Never with tights.
+- Sheer pieces need an underlayer (slip, bike shorts, camisole, bralette): use one from the wardrobe, or say what to wear underneath.
+- Match total warmth of all layers to the weather. "Only in" season limits are absolute.
+- Mild, cool or cold weather: straps, strapless, sleeveless or short sleeves always get a layer (a top underneath or a cardigan/blazer over). Cool and cold: a first layer where arms are bare, plus a jacket or coat on top.
+- Proportions: cropped pairs with high waists, oversized balances slim. Usually one pattern per outfit.
+- Colour: favour proven pairings (navy + camel, olive + rust, burgundy + blush), tonal looks, and one accent against neutrals. Name the colour idea briefly in "why".
+- Prefer combinations not in the saved, recently worn or rejected lists, and pieces not worn lately, unless the owner asks otherwise.
+- If key context is missing (weather, dress code), assume sensibly and say so in one short phrase.
+Reply with ONLY a JSON object, no markdown: {"reply":"1-3 conversational sentences","outfits":[{"title":"2-5 words","itemIds":["id","id"],"why":"max 40 words of concrete styling reasoning plus one practical tip"}]}
+Give 1-3 outfits unless asked for more. If nothing fits, return "outfits": [] and explain in reply.
+
+Wardrobe (id | name | details):
+${closetForAI()}
+
+Saved outfits:
+${list([...S.outfits.values()].map(o=>o.itemIds))}
+Worn in the last 14 days:
+${list([...S.log.values()].filter(e=>dayMs(e.date)>=cut).map(e=>e.itemIds||[]))}
+Rejected:
+${list([...S.passes.values()].map(p=>p.itemIds))}`;
+}
+function parseAI(text){
+  const a=text.indexOf("{"),b=text.lastIndexOf("}");
+  const o=JSON.parse(text.slice(a,b+1));
+  const outfits=(o.outfits||[]).map(x=>({title:String(x.title||"Outfit").slice(0,52),itemIds:[...new Set((x.itemIds||[]).map(String).filter(id=>S.items.has(id)))],why:String(x.why||"").slice(0,400),tips:[],saved:false})).filter(x=>x.itemIds.length>=2);
+  return {reply:String(o.reply||""),outfits};
+}
+async function askAI(text){
+  const key=lsGet("closet-api-key");if(!key||ui.asking)return;
+  ui.chat.push({role:"user",text});ui.asking=true;ui.askErr="";ui.ctl=new AbortController();render();
+  const messages=ui.chat.filter(m=>m.role==="user"||m.raw).map(m=>({role:m.role==="user"?"user":"assistant",content:m.role==="user"?m.text:m.raw}));
+  try{
+    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal:ui.ctl.signal,headers:{
+      "content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({model:lsGet("closet-model")||DEFAULT_MODEL,max_tokens:1500,system:aiSystem(),messages})});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok){
+      const m=(data.error&&data.error.message)||"";
+      throw new Error(res.status===401?"The API key was rejected. Check it under Change key.":/credit/i.test(m)?"Your API credit has run out. Top up at console.anthropic.com.":res.status===429?"Too many requests. Wait a minute and try again.":res.status===404||/model/i.test(m)?"That model name isn't available. Check it under Change key.":m||"The request failed. Try again.");
+    }
+    const raw=(data.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("");
+    let parsed;try{parsed=parseAI(raw)}catch(e){parsed={reply:raw.slice(0,600),outfits:[]}}
+    ui.chat.push({role:"ai",raw,text:parsed.reply,outfits:parsed.outfits});
+  }catch(e){
+    if(e.name==="AbortError"){ui.chat.pop()}
+    else{ui.askErr=navigator.onLine?e.message:"You're offline. Quick ideas still work.";ui.chat.pop()}
+  }
+  ui.asking=false;render();
+  const box=$("#askText");if(box&&ui.askErr)box.value=text;
+}
+
+/* ================= actions ================= */
+function findOutfit(ids){const s=sig(ids);return [...S.outfits.values()].find(o=>sig(o.itemIds)===s)}
+async function saveOutfit(ids,title,why){
+  const ex=findOutfit(ids);if(ex)return ex.id;
+  const id=rid();
+  await Store.put("outfits",id,{title:title||`Outfit ${S.outfits.size+1}`,itemIds:ids,why:why||"",savedAt:Date.now()});
+  return id;
+}
+async function wearToday(ids,outfitId){
+  const d=today();
+  await Store.put("log",d,{date:d,itemIds:ids,outfitId:outfitId||null,at:Date.now()});
+  toast("Logged as today's outfit");
+}
+function resultAt(ref){
+  if(!ref)return null;const p=ref.split(":");
+  if(p[0]==="q")return {list:ui.results,i:+p[1]};
+  const m=ui.chat[+p[1]];return m?{list:m.outfits,i:+p[2]}:null;
+}
+function exportBackup(){
+  const o={app:"closet",version:4,exportedAt:new Date().toISOString()};
+  for(const k of KINDS)o[k]=[...S[k].values()];
+  const json=JSON.stringify(o),name=`closet-backup-${today()}.json`;
+  const blob=new Blob([json],{type:"application/json"});
+  if(ui.backupUrl)URL.revokeObjectURL(ui.backupUrl.href);
+  ui.backupUrl={href:URL.createObjectURL(blob),name};
+  const done=()=>{lsSet("closet-last-backup",today());render()};
+  const touch=matchMedia("(pointer:coarse)").matches;
+  if(touch&&navigator.canShare){
+    const file=new File([json],name,{type:"text/plain"});
+    if(navigator.canShare({files:[file]})){navigator.share({files:[file],title:"Closet backup"}).then(done).catch(()=>render());return}
+  }
+  try{const a=document.createElement("a");a.href=ui.backupUrl.href;a.download=name;document.body.appendChild(a);a.click();a.remove()}catch(e){}
+  done();
+}
+async function importBackup(file){
+  try{
+    const o=JSON.parse(await file.text());if(o.app!=="closet")throw 0;
+    let n=0;for(const k of KINDS)for(const row of o[k]||[])if(row&&row.id){await Store.put(k,row.id,row);if(k==="items")n++}
+    await migrate();toast(`Restored ${n} pieces`);render();
+  }catch(e){toast("That file isn't a Closet backup.")}
+}
+
+/* ================= rendering ================= */
+function tile(i){return `<figure><img src="${i.photo}" alt=""><figcaption>${esc(i.name)}</figcaption></figure>`}
+function collage(ids,small){
+  const its=ids.map(id=>S.items.get(id)).filter(Boolean).sort((a,b)=>(ORDER[a.category]??9)-(ORDER[b.category]??9));
+  if(!its.length)return `<p class="note">These pieces were removed from your closet.</p>`;
+  const main=its.filter(i=>MAIN.has(i.category)),extra=its.filter(i=>!MAIN.has(i.category));
+  return `<div class="lay${small?" sm":""}">${main.length?`<div class="main n${Math.min(main.length,4)}">${main.map(tile).join("")}</div>`:""}${extra.length?`<div class="extra">${extra.map(tile).join("")}</div>`:""}</div>`;
+}
+function chip(act,val,on,extra=""){return `<button class="chip" data-act="${act}" data-v="${esc(val)}" aria-pressed="${on}"${extra}>${esc(val)}</button>`}
+function outfitCard(o,ref){
+  return `<article class="card"><h3>${esc(o.title)}</h3>${collage(o.itemIds)}${o.why?`<p class="why">${esc(o.why)}</p>`:""}
+  ${o.tips&&o.tips.length?`<ul class="tips">${o.tips.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`:""}
+  <div class="row">${ui.planDate?`<button class="btn" data-act="r-plan" data-ref="${ref}">Plan for ${esc(dayLabel(ui.planDate))}</button>`:`<button class="btn" data-act="r-wear" data-ref="${ref}">Wear today</button>`}
+  <button class="btn ghost" data-act="r-save" data-ref="${ref}" ${o.saved?"disabled":""}>${o.saved?"Saved":"Save"}</button>
+  <button class="btn quiet" data-act="r-pass" data-ref="${ref}">Not for me</button></div></article>`;
+}
+
+function renderCloset(){
+  const w=wearStats();
+  const all=items().sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  const todo=all.filter(i=>i.needsTags).length,review=all.filter(missingDetails).length;
+  const negCount=all.filter(it=>isNeglected(it,w.get(it.id))).length;
+  const offCount=all.filter(i=>!available(i)).length;
+  let list=all;
+  const q=(ui.q||"").trim().toLowerCase();
+  if(q)list=list.filter(i=>[i.name,i.brand,i.color,...arr(i.colors2),i.type,i.category,...arr(i.material),...arr(i.pattern),i.silhouette,i.desc].filter(Boolean).join(" ").toLowerCase().includes(q));
+  const lastW=i=>{const s=w.get(i.id);return s?dayMs(s.last):(i.addedAt||0)};
+  const sorters={"Newest":(a,b)=>(b.addedAt||0)-(a.addedAt||0),"Most worn":(a,b)=>(w.get(b.id)?.count||0)-(w.get(a.id)?.count||0),"Least worn":(a,b)=>(w.get(a.id)?.count||0)-(w.get(b.id)?.count||0),
+    "Longest unworn":(a,b)=>lastW(a)-lastW(b),"Name":(a,b)=>(a.name||"").localeCompare(b.name||""),"Colour":(a,b)=>COLORS.findIndex(c=>c[0]===a.color)-COLORS.findIndex(c=>c[0]===b.color),"Price":(a,b)=>(+b.price||0)-(+a.price||0)};
+  list=[...list].sort(sorters[ui.sort||"Newest"]);
+  if(ui.filter==="Not worn lately")list=all.filter(it=>isNeglected(it,w.get(it.id)));
+  else if(ui.filter==="Unavailable")list=all.filter(i=>!available(i));
+  else if(ui.filter==="Never worn")list=all.filter(i=>!i.needsTags&&!w.get(i.id));
+  else if(ui.filter!=="All")list=all.filter(it=>it.category===ui.filter);
+  const neverCount=all.filter(i=>!i.needsTags&&!w.get(i.id)).length;
+  const filters=["All",...(negCount?["Not worn lately"]:[]),...(neverCount?["Never worn"]:[]),...(offCount?["Unavailable"]:[]),...CATS.filter(c=>all.some(i=>i.category===c))];
+  const pieces=all.reduce((n,i)=>n+(i.qty||1),0);
+  let h=`<div class="head"><div><h1>Closet</h1><p class="sub">${pieces} ${pieces===1?"piece":"pieces"}${negCount?`, ${negCount} not worn in 3+ weeks`:""}</p></div>
+  <div class="actions">${all.length?`<button class="btn ghost" data-act="select">${ui.selecting?"Done":"Select"}</button>`:""}<button class="btn" data-act="add">Add pieces</button></div></div>`;
+  if(todo)h+=`<div class="banner"><span>${todo} ${todo===1?"piece needs":"pieces need"} tags</span><button class="btn" data-act="tagnow">Tag now</button></div>`;
+  else if(review)h+=`<div class="banner"><span>${review} ${review===1?"piece is":"pieces are"} missing details the ideas use</span><button class="btn" data-act="reviewnow">Review</button></div>`;
+  if(!all.length){
+    return h+`<div class="empty"><h3>Start with your office wardrobe</h3>
+    <p>Lay each piece flat on the same plain background in good light and take one photo per piece. Then add them all at once.</p>
+    <p>You'll tag each one right after. Paste the shop's description if you have it and the app fills in most tags for you.</p>
+    <p>Ideas get interesting at around 30 pieces.</p></div>`+renderSettings();
+  }
+  h+=`<div class="tools"><input type="search" id="q" placeholder="Search name, brand, colour, material…" value="${esc(ui.q||"")}" aria-label="Search your closet">
+  <select id="sort" aria-label="Sort">${["Newest","Most worn","Least worn","Longest unworn","Name","Colour","Price"].map(s=>`<option ${s===(ui.sort||"Newest")?"selected":""}>${s}</option>`).join("")}</select></div>`;
+  if(filters.length>1)h+=`<div class="chips" role="toolbar" aria-label="Filter">${filters.map(f=>chip("filter",f,ui.filter===f)).join("")}</div>`;
+  if(ui.selecting)h+=`<p class="note">Tap pieces to log today's outfit, save a combination, or send them to the laundry.</p>`;
+  h+=`<div class="grid">${list.map(it=>{
+    const s=w.get(it.id),neg=isNeglected(it,s),sel=ui.sel.has(it.id),off=!available(it);
+    return `<div><button class="item${sel?" sel":""}${off?" off":""}" data-act="item" data-id="${it.id}" aria-label="${esc(it.name||"Untagged piece")}${ui.selecting?(sel?", selected":", not selected"):""}">
+      <div class="ph"><img src="${it.photo}" alt="" loading="lazy"></div>
+      ${off?`<span class="status">${esc(it.status)}</span>`:""}
+      ${ui.selecting?`<span class="check" aria-hidden="true">${sel?"✓":""}</span>`:""}
+      <span class="hangtag${neg?" neg":""}${it.needsTags?" pending":""}"><b>${esc(it.needsTags?"Needs tags":it.name)}</b>${it.qty>1?`<span class="qty">×${it.qty}</span>`:""}</span></button>
+      <p class="meta">${s?`Worn ${s.count}x, ${ago(s.last)}`:"Never worn yet"}</p></div>`;
+  }).join("")}</div>`;
+  if(!list.length)h+=`<p class="note">Nothing here.</p>`;
+  return h+renderSettings();
+}
+function renderSettings(){
+  const last=lsGet("closet-last-backup");
+  return `<section class="backup"><h2>Backup</h2>
+  <p class="sub">Your closet lives only on this phone. Export a backup every few weeks and keep it in Files, iCloud Drive, or your email.${last?` Last backup: ${ago(last)}.`:" No backup yet."}</p>
+  <div class="row"><button class="btn ghost" data-act="export">Export backup</button><button class="btn quiet" data-act="import">Restore from file</button></div>
+  ${ui.backupUrl?`<p class="note">If no file appeared, <a href="${ui.backupUrl.href}" download="${ui.backupUrl.name}">tap here to download the backup</a>. On iPhone, open it and choose Save to Files.</p>`:""}</section>`;
+}
+
+function renderIdeas(){
+  let h=`<h1>Outfit ideas</h1><div class="seg" role="group" aria-label="Mode"><button data-act="mode" data-v="quick" aria-pressed="${ui.mode==="quick"}">Quick ideas</button><button data-act="mode" data-v="ask" aria-pressed="${ui.mode==="ask"}">Ask AI</button></div>`;
+  return h+(ui.mode==="ask"?renderAsk():renderQuick());
+}
+function planBanner(){return ui.planDate?`<div class="banner"><span>Choosing an outfit for ${esc(dayLabel(ui.planDate))}</span><button class="btn" data-act="p-cancel">Cancel</button></div>`:""}
+function renderQuick(){
+  const ready=items().filter(i=>!i.needsTags&&available(i));
+  const hasCore=ready.some(i=>i.category==="Dress")||(ready.some(i=>i.category==="Top")&&ready.some(i=>i.category==="Bottom"));
+  let h=planBanner()+`<p class="sub" style="margin-top:12px">New combinations from your own closet. Works offline.</p>`;
+  if(ready.length<5||!hasCore)return h+`<div class="empty"><h3>Add a few more pieces first</h3><p>Ideas need at least 5 tagged pieces, including a top and a bottom or a dress. You have ${ready.length}.</p><div class="row"><button class="btn" data-act="goto" data-v="closet">Go to closet</button></div></div>`;
+  const a=ui.anchor&&S.items.get(ui.anchor);
+  h+=`<div class="field"><span>Occasion</span><div class="chips wrap">${[...OCCASIONS,"Any"].map(v=>chip("occ",v,ui.occasion===v)).join("")}</div></div>
+  <div class="field"><span>Weather</span>${forecastHTML()}<div class="chips wrap">${WEATHER.map(v=>chip("wea",v,ui.weather===v)).join("")}${chip("rain","Rain",ui.rain)}</div></div>
+  ${a?`<div class="field"><span>Built around</span><div class="anchor"><img src="${a.photo}" alt=""><b>${esc(a.name)}</b><button data-act="unanchor">Remove</button></div></div>`:""}
+  <label class="toggle"><input type="checkbox" data-act="neglect" ${ui.neglect?"checked":""}> Work in pieces I haven't worn lately</label>
+  <div class="row"><button class="btn" data-act="gen">${ui.results.length?"Suggest new outfits":"Suggest outfits"}</button></div>`;
+  if(ui.err)h+=`<p class="err">${esc(ui.err)}</p>`;
+  if(ui.results.length)h+=`<p class="note">Ideas for ${esc(ui.occasion)}, ${esc(ui.weather)}${ui.rain?" + Rain":""}${ui.anchor&&S.items.get(ui.anchor)?`, built around the ${esc(S.items.get(ui.anchor).name)}`:""}.</p>`;
+  ui.results.forEach((o,i)=>h+=outfitCard(o,"q:"+i));
+  return h;
+}
+function renderAsk(){
+  const key=lsGet("closet-api-key");
+  let h="";
+  if(!key||ui.editKey){
+    return h+`<div class="card keybox"><h3>Connect your own AI key</h3>
+    <p class="why" style="margin-top:0">Ask AI uses Anthropic's API with your own key, so it isn't tied to a Claude account. Create a key at console.anthropic.com under API keys and add a few euros of credit under Billing. Each request costs a few cents. The key is stored only on this phone.</p>
+    <label class="field"><span>API key</span><input type="password" id="keyIn" autocomplete="off" placeholder="sk-ant-…" value="${key?"••••••••":""}"></label>
+    <label class="field"><span>Model</span><input type="text" id="modelIn" autocomplete="off" value="${esc(lsGet("closet-model")||DEFAULT_MODEL)}"></label>
+    <div class="row"><button class="btn" data-act="savekey">Save</button>${key?`<button class="btn quiet" data-act="cancelkey">Cancel</button><button class="btn quiet danger" data-act="removekey">Remove key</button>`:""}</div></div>`;
+  }
+  if(!navigator.onLine)h+=`<p class="err">You're offline. Ask AI needs a connection. Quick ideas still work.</p>`;
+  if(!ui.chat.length)h+=`<p class="sub" style="margin-top:12px">Describe what you need, like "client dinner Thursday, then drinks, it might rain" or "3 outfits for a work trip to Paris".</p>`;
+  ui.chat.forEach((m,mi)=>{
+    if(m.role==="user")h+=`<div class="msg user"><p>${esc(m.text)}</p></div>`;
+    else{h+=`<div class="msg ai"><p>${esc(m.text||"Here are some ideas.")}</p></div>`;(m.outfits||[]).forEach((o,i)=>h+=outfitCard(o,`c:${mi}:${i}`))}
+  });
+  if(ui.asking)h+=`<div class="thinking" style="margin-top:14px;color:var(--muted)">Putting outfits together… <button class="btn ghost" data-act="stop">Stop</button></div>`;
+  if(ui.askErr)h+=`<p class="err">${esc(ui.askErr)}</p>`;
+  h+=`<div class="ask"><textarea id="askText" placeholder="What do you need an outfit for?" aria-label="Your request"></textarea>
+  <div class="row" style="margin-top:8px"><button class="btn" data-act="send" ${ui.asking?"disabled":""}>Send</button>${ui.chat.length?`<button class="btn quiet" data-act="clearchat">New chat</button>`:""}<button class="btn quiet" data-act="editkey">Change key</button></div></div>`;
+  return h;
+}
+
+function renderOutfits(){
+  let h=`<h1>Outfits</h1>`+planBanner()+`<h2>Today</h2>`;
+  const t=S.log.get(today()),pt=S.plans.get(today());
+  h+=t?`<div class="card">${collage(t.itemIds)}</div>`
+    :pt?`<div class="card"><h3>Planned for today</h3>${collage(pt.itemIds)}<div class="row"><button class="btn" data-act="p-wear" data-v="${today()}">Wear this</button></div></div>`
+    :`<p class="sub">Nothing logged yet. Tap Wear today on an outfit, or select pieces in your closet.</p>`;
+  const outs=[...S.outfits.values()].sort((a,b)=>(b.savedAt||0)-(a.savedAt||0));
+  const worn=new Map();for(const e of S.log.values())if(e.outfitId)worn.set(e.outfitId,(worn.get(e.outfitId)||0)+1);
+  h+=`<h2>Saved${outs.length?` (${outs.length})`:""}</h2>`;
+  if(!outs.length)h+=`<p class="sub">Outfits you save from Ideas or build in your closet show up here.</p>`;
+  outs.forEach(o=>{
+    const n=worn.get(o.id)||0;
+    h+=`<article class="card"><h3>${esc(o.title)}</h3>${collage(o.itemIds,true)}${o.why?`<p class="why">${esc(o.why)}</p>`:""}<p class="note">${n?`Worn ${n}x`:"Not worn yet"}</p>
+    <div class="row">${ui.planDate?`<button class="btn" data-act="o-plan" data-id="${o.id}">Plan for ${esc(dayLabel(ui.planDate))}</button>`:`<button class="btn" data-act="o-wear" data-id="${o.id}">Wear today</button>`}<button class="btn quiet" data-act="o-del" data-id="${o.id}">Remove</button></div></article>`;
+  });
+  const cutoff=Date.now()-14*864e5;
+  const hist=[...S.log.values()].filter(e=>e.date!==today()&&dayMs(e.date)>=cutoff).sort((a,b)=>b.date.localeCompare(a.date));
+  if(hist.length){
+    h+=`<h2>Last 2 weeks</h2>`;
+    hist.forEach(e=>{const d=new Date(dayMs(e.date)).toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"});
+      h+=`<div class="hist"><span class="d">${esc(d)}</span><div class="t">${(e.itemIds||[]).map(id=>S.items.get(id)).filter(Boolean).map(i=>`<img src="${i.photo}" alt="${esc(i.name)}">`).join("")}</div></div>`});
+  }
+  return h;
+}
+
+function render(){
+  if(!ui.ready)return;
+  ui.rendering=true;
+  const keep=$("#askText")?$("#askText").value:"";
+  $("#app").innerHTML=ui.tab==="closet"?renderCloset():ui.tab==="ideas"?renderIdeas():ui.tab==="plan"?renderPlan():ui.tab==="stats"?renderStats():renderOutfits();
+  if(keep&&$("#askText")&&!$("#askText").value)$("#askText").value=keep;
+  if(ui.focusQ&&$("#q")){const q=$("#q");q.focus();q.setSelectionRange(q.value.length,q.value.length)}
+  ui.rendering=false;
+  document.querySelectorAll("#tabs button").forEach(b=>{if(b.dataset.tab===ui.tab)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
+  if(ui.tab==="closet"&&ui.selecting&&ui.sel.size){
+    const allOff=[...ui.sel].every(id=>!available(S.items.get(id)||{}));
+    $("#selbar").innerHTML=`<div class="selbar"><span>${ui.sel.size} selected</span><button class="btn" data-act="s-wear">Wear today</button><button class="btn" data-act="s-save">Save outfit</button><button class="btn" data-act="s-edit">Edit tags</button><button class="btn" data-act="s-laundry">${allOff?"Back in closet":"To laundry"}</button><button class="btn quiet" data-act="s-clear">Clear</button></div>`;
+  }else $("#selbar").innerHTML="";
+}
+
+/* ================= item sheet ================= */
+function openItem(id,inQueue){
+  const it=S.items.get(id);if(!it)return;
+  ui.draft=JSON.parse(JSON.stringify({...it,formality:it.formality||[],season:it.season||[],qty:it.qty||1,status:it.status||"In closet"}));
+  ui.draftId=id;ui.inQueue=!!inQueue;
+  renderSheet();
+  if(!$("#dlg").open)$("#dlg").showModal();
+  $("#dlgBody").scrollTop=0;
+}
+function single(field,opts,cur,colors){
+  return opts.map(v=>`<button type="button" class="chip" data-f="${field}" data-v="${esc(v)}" aria-pressed="${v===cur}">${colors?swatch(v):""}${esc(v)}</button>`).join("");
+}
+function multi(field,opts,cur,colors){return opts.map(v=>`<button type="button" class="chip" data-m="${field}" data-v="${esc(v)}" aria-pressed="${arr(cur).includes(v)}">${colors?swatch(v):""}${esc(v)}</button>`).join("")}
+function swatch(c){return c==="Multicolour"?`<span class="sw multi"></span>`:`<span class="sw" style="background:${COLOR_HEX[c]}"></span>`}
+function renderSheet(){
+  const d=ui.draft,id=ui.draftId;const cat=d.category;
+  const s=wearStats().get(id);
+  const pos=ui.inQueue?ui.queue.indexOf(id):-1;const isLast=ui.inQueue&&pos===ui.queue.length-1;
+  const COLORNAMES=COLORS.map(c=>c[0]);
+  const fieldHTML=f=>{
+    const def=FIELDS[f];
+    const hint=def.multi?` <span class="hint-inline">(pick all that apply)</span>`:"";
+    if(def.multi)return `<div class="field"><span>${def.label}${hint}</span><div class="chips wrap">${multi(f,def.colors?COLORNAMES:def.opts,d[f],def.colors)}</div></div>`;
+    return `<div class="field"><span>${def.label}</span><div class="chips wrap">${single(f,def.opts,d[f])}</div></div>`;
+  };
+  let h=`${ui.inQueue?`<p class="count">${ui.queueLabel} ${pos+1} of ${ui.queue.length}</p>`:""}
+  <img class="ph" src="${d.photo}" alt="">
+  <div class="row" style="margin-top:8px"><button type="button" class="btn ghost" data-sheet="photo">Change photo</button>${!ui.inQueue&&!d.needsTags?`<button type="button" class="btn ghost" data-sheet="dup">Duplicate</button>`:""}</div>
+  <div class="field"><span>Status</span><div class="chips wrap">${single("status",["In closet","In laundry","At tailor"],d.status)}</div></div>
+  <div class="sec"><h4>Shop description</h4><p class="hint">Paste the product description and tap Fill tags. Check what it picks up.</p>
+  <textarea id="f-desc" placeholder="Paste from the shop's website">${esc(d.desc||"")}</textarea>
+  <div class="row"><button type="button" class="btn ghost" data-sheet="fill">Fill tags from description</button></div></div>
+  <div class="sec"><h4>Basics</h4>
+  <div class="field"><span>Category <span class="req">*</span></span><div class="chips wrap">${single("category",CATS,cat)}</div></div>`;
+  if(cat){
+    h+=`<div class="field"><span>Type${NEEDS_TYPE.has(cat)?` <span class="req">*</span>`:""}</span><div class="chips wrap">${single("type",TYPES[cat],d.type)}</div></div>
+    <div class="field"><span>Main colour <span class="req">*</span></span><div class="chips wrap">${single("color",COLORNAMES,d.color,true)}</div></div>
+    <div class="field"><span>Occasion${NO_OCCASION.has(cat)?"":` <span class="req">*</span>`}</span><div class="chips wrap">${multi("formality",OCCASIONS,d.formality)}</div></div>
+    ${NEEDS_WARMTH.has(cat)?`<div class="field"><span>Warmth <span class="req">*</span></span><div class="chips wrap">${WARMTH.map((v,i)=>`<button type="button" class="chip" data-f="warmth" data-v="${i}" aria-pressed="${d.warmth!=null&&+d.warmth===i}">${v}</button>`).join("")}</div></div>`:""}
+    </div>
+    <div class="sec"><h4>Details</h4><p class="hint">Optional, but the more you fill in, the smarter the ideas get.</p>
+    ${LAYOUT[cat].map(fieldHTML).join("")}</div>
+    <div class="sec"><h4>Extras</h4>
+    <label class="field"><span>Name</span><input type="text" id="f-name" value="${esc(d.needsTags||d.name===d.autoName?"":d.name||"")}" placeholder="Leave empty to name it from its tags" maxlength="48"></label>
+    <label class="field"><span>Brand</span><input type="text" id="f-brand" value="${esc(d.brand||"")}" maxlength="40"></label>
+    <label class="field"><span>Price you paid (optional, €)</span><input type="text" inputmode="decimal" id="f-price" value="${d.price!=null&&d.price!==""?esc(d.price):""}" placeholder="e.g. 89" maxlength="10"></label>
+    <div class="field"><span>How many identical ones you own</span><div class="stepper"><button type="button" data-sheet="qm" aria-label="Fewer">−</button><span id="qtyv">${d.qty||1}</span><button type="button" data-sheet="qp" aria-label="More">+</button></div></div>
+    <div class="field"><span>Only wear in (optional hard limit)</span><div class="chips wrap">${multi("season",SEASONS,d.season)}</div></div>
+    ${["Top","Dress"].includes(cat)?`<label class="toggle"><input type="checkbox" id="f-nolayer" ${d.noLayer?"checked":""}> Never layer this piece</label>`:""}
+    </div>`;
+  }else h+=`</div>`;
+  h+=`${!ui.inQueue?`<p class="stats">${s?`Worn ${s.count}x, last ${ago(s.last)}.`:"Never worn yet."}</p>`:""}
+  <p class="err" id="d-err" hidden></p>
+  <div class="row"><button class="btn" data-sheet="save">${ui.inQueue?(isLast?"Save and finish":"Save and next"):"Save changes"}</button>
+  ${ui.inQueue?`<button class="btn quiet" data-sheet="skip">${isLast?"Finish later":"Skip"}</button>`:`<button class="btn ghost" data-sheet="style" ${d.needsTags?"disabled":""}>Style this piece</button>`}</div>
+  <div class="row"><button class="btn quiet" data-sheet="close">Close</button><button class="btn quiet danger" data-sheet="del">Delete piece</button></div>`;
+  $("#dlgBody").innerHTML=h;
+}
+function syncText(){
+  const d=ui.draft;if(!d)return;
+  const g=id=>$("#"+id);
+  if(g("f-desc"))d.desc=g("f-desc").value;
+  if(g("f-name"))d.nameInput=g("f-name").value.trim();
+  if(g("f-brand"))d.brand=g("f-brand").value.trim();
+  if(g("f-price")){const p=parseFloat(g("f-price").value.replace(",","."));d.price=isFinite(p)&&p>=0?Math.round(p*100)/100:""}
+  if(g("f-nolayer"))d.noLayer=g("f-nolayer").checked;
+}
+function rerenderSheet(){const b=$("#dlgBody");const y=b.scrollTop;syncText();renderSheet();b.scrollTop=y}
+function sheetNext(){
+  const i=ui.queue.indexOf(ui.draftId);const nid=ui.queue[i+1];
+  if(ui.inQueue&&nid)openItem(nid,true);
+  else{$("#dlg").close();ui.queue=[];ui.draft=null;render()}
+}
+async function sheetSave(){
+  syncText();const d=ui.draft,cat=d.category;
+  const miss=[!cat&&"category",cat&&NEEDS_TYPE.has(cat)&&!d.type&&"type",!d.color&&"main colour",cat&&!NO_OCCASION.has(cat)&&!(d.formality||[]).length&&"occasion",cat&&NEEDS_WARMTH.has(cat)&&d.warmth==null&&"warmth"].filter(Boolean);
+  if(miss.length){const e=$("#d-err");e.textContent="Still needed: "+miss.join(", ")+".";e.hidden=false;e.scrollIntoView({block:"center"});return}
+  const keep=new Set([...(LAYOUT[cat]||[]),"color","type","warmth","formality","season","brand","desc","noLayer","qty","status","price"]);
+  const clean={v:3,photo:d.photo,addedAt:d.addedAt,category:cat};
+  for(const k of keep)if(d[k]!==undefined&&d[k]!==null&&d[k]!==""&&!(Array.isArray(d[k])&&!d[k].length&&MULTI_FIELDS.includes(k)))clean[k]=d[k];
+  if(clean.colors2)clean.colors2=clean.colors2.filter(c=>c!==clean.color);
+  if(!NEEDS_WARMTH.has(cat))delete clean.warmth;
+  if(cat==="Underlayer")clean.warmth=0;
+  const auto=`${d.color} ${(d.type&&d.type!=="Other"&&d.type!=="Dress"?d.type:cat)}`.toLowerCase().replace(" / "," ");
+  const typed=d.nameInput;
+  clean.name=typed&&typed!==auto?typed:auto;
+  clean.autoName=auto;clean.needsTags=false;clean.needsReview=false;
+  try{await Store.put("items",ui.draftId,clean)}catch(e){return}
+  if(ui.inQueue)sheetNext();else{$("#dlg").close();ui.draft=null;render();toast("Saved")}
+}
+$("#dlgBody").addEventListener("input",e=>{if(["f-name","f-brand","f-desc","f-price"].includes(e.target.id))syncText()});
+$("#dlgBody").addEventListener("click",async e=>{
+  if(ui.bulk){bulkClick(e);return}
+  const d=ui.draft;if(!d)return;
+  const f=e.target.closest("[data-f]"),m=e.target.closest("[data-m]"),a=e.target.closest("[data-sheet]");
+  if(f){
+    const k=f.dataset.f;let v=f.dataset.v;if(k==="warmth")v=+v;
+    if(k==="category"){if(d.category!==v){d.category=v;d.type=""}rerenderSheet();return}
+    d[k]=(d[k]===v&&k!=="status")?"":v;
+    f.parentElement.querySelectorAll("[data-f]").forEach(x=>x.setAttribute("aria-pressed",String(x===f&&d[k]!=="")));
+    return;
+  }
+  if(m){const k=m.dataset.m,v=m.dataset.v;const cur=arr(d[k]);d[k]=cur.includes(v)?cur.filter(x=>x!==v):[...cur,v];m.setAttribute("aria-pressed",String(d[k].includes(v)));return}
+  if(!a)return;
+  const act=a.dataset.sheet;
+  if(act==="fill"){
+    syncText();const text=d.desc||"";if(!text.trim()){toast("Paste a description first");return}
+    const n=applyParsed(d,parseDesc(text));rerenderSheet();toast(n?`Filled ${n} ${n===1?"tag":"tags"}. Check them below.`:"Nothing new found in that text");
+  }
+  if(act==="photo"){syncText();$("#photoIn").click();return}
+  if(act==="dup"){
+    const src=S.items.get(ui.draftId);if(!src)return;
+    const nid=rid();
+    const copy={...src,color:"",colors2:[],name:"",autoName:"",addedAt:Date.now(),needsTags:true,needsReview:false,status:"In closet"};
+    delete copy.id;
+    await Store.put("items",nid,copy);render();
+    openItem(nid,false);toast("Copy made. Change its photo and pick its colour.");return;
+  }
+  if(act==="qm"){d.qty=Math.max(1,(d.qty||1)-1);$("#qtyv").textContent=d.qty}
+  if(act==="qp"){d.qty=Math.min(20,(d.qty||1)+1);$("#qtyv").textContent=d.qty}
+  if(act==="save")sheetSave();
+  if(act==="skip")sheetNext();
+  if(act==="close"){$("#dlg").close();ui.queue=[];ui.draft=null;render()}
+  if(act==="style"){ui.anchor=ui.draftId;ui.tab="ideas";ui.mode="quick";ui.results=[];ui.err="";$("#dlg").close();ui.draft=null;render();scrollTo(0,0)}
+  if(act==="del"){
+    if(!a.dataset.armed){a.dataset.armed="1";a.textContent="Tap again to delete";return}
+    const id=ui.draftId;ui.sel.delete(id);if(ui.anchor===id)ui.anchor=null;
+    await Store.remove("items",id);toast("Piece deleted");
+    if(ui.inQueue){const i=ui.queue.indexOf(id);ui.queue.splice(i,1);const nid=ui.queue[i];if(nid){openItem(nid,true);return}}
+    $("#dlg").close();ui.queue=[];ui.draft=null;render();
+  }
+});
+$("#dlg").addEventListener("close",()=>{if(ui.bulk)ui.bulk=null;if(ui.draft){ui.draft=null;ui.queue=[];render()}});
+
+
+/* ================= week planner ================= */
+function startPlanning(key){
+  ui.planDate=key;ui.tab="ideas";ui.mode="quick";ui.results=[];ui.err="";ui.anchor=null;
+  const off=Math.round((dayMs(key)-dayMs(today()))/864e5);
+  if(off>=0&&off<=6){ui.fcOff=off;ui.weatherManual=false;applyForecast()}
+  render();scrollTo(0,0);loadForecast(false);
+}
+async function planOutfit(ids,title,why){
+  const key=ui.planDate;if(!key)return;
+  await saveOutfit(ids,title,why);
+  await Store.put("plans",key,{date:key,itemIds:ids,title:title||"Planned outfit",why:why||"",at:Date.now()});
+  ui.planDate=null;ui.tab="plan";render();scrollTo(0,0);toast(`Planned for ${dayLabel(key)}`);
+}
+function renderPlan(){
+  if(ui.newTrip)return renderNewTrip();
+  const trip=ui.tripId&&S.trips.get(ui.tripId);if(trip)return renderTrip(trip);
+  let h=`<h1>Plan</h1><p class="sub">Pick outfits ahead, and plan trips with a packing list.</p><h2>This week</h2>`;
+  for(let n=0;n<7;n++){
+    const key=dateForOffset(n),p=S.plans.get(key),f=forecastFor(FC.data,key),logged=S.log.get(key);
+    h+=`<article class="card"><div class="dayhead"><h3>${esc(dayLabel(key))}</h3><span class="note">${f?`${f.feels}°C, ${f.weather}${f.wet?" + rain":""}`:""}</span></div>`;
+    if(p){
+      h+=`${collage(p.itemIds,true)}<div class="row">${n===0&&!logged?`<button class="btn" data-act="p-wear" data-v="${key}">Wear this</button>`:""}${n===0&&logged?`<span class="note">Logged</span>`:""}<button class="btn ghost" data-act="p-choose" data-v="${key}">Change</button><button class="btn quiet" data-act="p-clear" data-v="${key}">Clear</button></div>`;
+    }else h+=`<div class="row" style="margin-top:4px"><button class="btn ghost" data-act="p-choose" data-v="${key}">Choose outfit</button></div>`;
+    h+=`</article>`;
+  }
+  const trips=[...S.trips.values()].sort((a,b)=>a.start.localeCompare(b.start));
+  h+=`<h2>Trips</h2>`;
+  if(!trips.length)h+=`<p class="sub">Plan outfits for every day of a trip, with the destination's forecast and a packing list.</p>`;
+  trips.forEach(t=>{
+    const n=packList(t).length,packed=packList(t).filter(x=>t.packed&&t.packed[x.it.id]).length;
+    h+=`<button class="card tripcard" data-act="t-open" data-id="${t.id}"><h3>${esc(t.name)}</h3><p class="sub">${esc(fmtRange(t.start,t.end))}${n?`, ${packed} of ${n} packed`:""}</p></button>`;
+  });
+  h+=`<div class="row"><button class="btn" data-act="t-new">New trip</button></div>`;
+  return h;
+}
+function fmtRange(a,b){
+  const o={day:"numeric",month:"short"};
+  return new Date(dayMs(a)).toLocaleDateString(undefined,o)+" to "+new Date(dayMs(b)).toLocaleDateString(undefined,o);
+}
+
+/* ================= trips ================= */
+async function searchPlace(){
+  const t=ui.newTrip;if(!t)return;const q=(t.q||"").trim();if(!q){toast("Type a city first");return}
+  if(!navigator.onLine){t.err="You're offline. Searching for a destination needs a connection.";render();return}
+  t.err="";t.searching=true;render();
+  try{
+    const r=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=en&format=json`);
+    const j=await r.json();
+    t.results=(j.results||[]).map(x=>({name:x.name,label:[x.name,x.admin1,x.country].filter(Boolean).join(", "),lat:x.latitude,lon:x.longitude}));
+    if(!t.results.length)t.err="No places found. Try another spelling.";
+  }catch(e){t.err="The search didn't work. Try again."}
+  t.searching=false;render();
+}
+function renderNewTrip(){
+  const t=ui.newTrip;
+  let h=`<button class="btn quiet" data-act="t-back" style="padding-left:0">← Plan</button><h1>New trip</h1>
+  <label class="field"><span>Destination</span></label>
+  <div class="tools" style="margin-top:6px"><input type="search" id="t-q" value="${esc(t.q)}" placeholder="City, e.g. Lisbon" aria-label="Destination"><button class="btn ghost" data-act="t-search">${t.searching?"Searching…":"Search"}</button></div>`;
+  if(t.err)h+=`<p class="err">${esc(t.err)}</p>`;
+  if(t.results.length)h+=`<div class="chips wrap">${t.results.map((p,i)=>`<button class="chip" data-act="t-place" data-v="${i}" aria-pressed="false">${esc(p.label)}</button>`).join("")}</div>`;
+  if(t.place)h+=`<p class="note">Destination: <b>${esc(t.place.label)}</b></p>`;
+  h+=`<div class="tools" style="margin-top:18px"><label class="field" style="margin:0;flex:1"><span>From</span><input type="date" id="t-start" value="${esc(t.start)}" class="datein"></label>
+  <label class="field" style="margin:0;flex:1"><span>To</span><input type="date" id="t-end" value="${esc(t.end)}" class="datein"></label></div>
+  <div class="field"><span>What most days look like</span><div class="chips wrap">${OCCASIONS.map(o=>chip("t-occ",o,t.occ.includes(o))).join("")}</div></div>
+  <label class="toggle"><input type="checkbox" id="t-travel" ${t.travel?"checked":""}> First and last day are travel days</label>
+  <div class="field"><span>Expected weather, until the forecast is available</span><div class="chips wrap">${WEATHER.map(v=>chip("t-fb",v,t.fallback===v)).join("")}</div></div>
+  <p class="note">You can change the occasions for each day afterwards.</p>
+  <div class="row"><button class="btn" data-act="t-create">Create trip</button></div>`;
+  return h;
+}
+async function createTrip(){
+  const t=ui.newTrip;
+  if(!t.place){toast("Search for and pick a destination first");return}
+  if(!t.start||!t.end||t.end<t.start){toast("Check the dates");return}
+  const days=[];for(let d=dayMs(t.start);d<=dayMs(t.end);d+=864e5)days.push(ymd(new Date(d)));
+  if(days.length>30){toast("Trips can be up to 30 days");return}
+  if(!t.occ.length){toast("Pick at least one occasion");return}
+  const id=rid();
+  const trip={id,name:t.place.name,place:t.place.label,lat:t.place.lat,lon:t.place.lon,start:t.start,end:t.end,fallback:t.fallback,createdAt:Date.now(),packed:{},outfits:{},
+    days:days.map((date,i)=>({date,occasions:t.travel&&(i===0||i===days.length-1)?["Travel"]:[...t.occ]}))};
+  ui.newTrip=null;ui.tripId=id;
+  await Store.put("trips",id,trip);
+  render();scrollTo(0,0);
+  await refreshTripForecast(trip,true,true);
+}
+async function refreshTripForecast(trip,force,thenBuild){
+  if(!trip)return;
+  const startOff=Math.round((dayMs(trip.start)-dayMs(today()))/864e5);
+  const inRange=startOff<=15&&dayMs(trip.end)>=dayMs(today());
+  const fresh=trip.fc&&Date.now()-trip.fc.at<6*36e5;
+  if(inRange&&navigator.onLine&&(force||!fresh)){
+    try{
+      const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${(+trip.lat).toFixed(3)}&longitude=${(+trip.lon).toFixed(3)}&hourly=apparent_temperature,precipitation_probability&timezone=auto&forecast_days=16`);
+      const j=await r.json();if(j.hourly){trip.fc={at:Date.now(),data:j.hourly}}
+    }catch(e){if(force)toast("Couldn't load the forecast. Using your expected weather.")}
+  }
+  if(thenBuild||!Object.keys(trip.outfits||{}).length)buildTrip(trip);
+  await Store.put("trips",trip.id,trip);
+  if(ui.tripId===trip.id)render();
+}
+function tripDayWeather(trip,date){
+  const f=forecastFor(trip.fc&&trip.fc.data,date);
+  return f?{weather:f.weather,rain:f.wet,f}:{weather:trip.fallback||"Mild",rain:false,f:null};
+}
+function withBrief(b,fn){
+  const keys=["occasion","weather","rain","anchor","neglect","packBoost","extraExclude","tripMode","avoidMain"];const save={};
+  keys.forEach(k=>save[k]=ui[k]);Object.assign(ui,b);
+  try{return fn()}finally{keys.forEach(k=>ui[k]=save[k])}
+}
+function pickTripOutfit(trip,date,occ,boost,exclude,avoid){
+  const w=tripDayWeather(trip,date);
+  const r=withBrief({occasion:occ,weather:w.weather,rain:w.rain,anchor:null,neglect:false,packBoost:boost,extraExclude:exclude,tripMode:true,avoidMain:avoid||null},()=>suggest());
+  return r[0]||null;
+}
+function buildTrip(trip,onlyDate){
+  const out=onlyDate?{...(trip.outfits||{})}:{};
+  const boost=new Map(),exclude=new Set();const bump=id=>boost.set(id,(boost.get(id)||0)+1);
+  if(onlyDate)for(const [d,list] of Object.entries(out))if(d!==onlyDate)list.forEach(x=>{x.itemIds.forEach(bump);if(x.itemIds.length)exclude.add(sig(x.itemIds))});
+  for(const day of trip.days){
+    if(onlyDate&&day.date!==onlyDate)continue;
+    const w=tripDayWeather(trip,day.date);
+    out[day.date]=day.occasions.map(occ=>{
+      const p=pickTripOutfit(trip,day.date,occ,boost,exclude);
+      if(!p)return {occasion:occ,itemIds:[],why:"Nothing in your closet fits this occasion and weather yet.",weather:w.weather,rain:w.rain};
+      p.itemIds.forEach(bump);exclude.add(sig(p.itemIds));
+      return {occasion:occ,itemIds:p.itemIds,why:p.why,tips:p.tips,weather:w.weather,rain:w.rain};
+    });
+  }
+  trip.outfits=out;
+}
+function swapTripOutfit(trip,date,i){
+  const boost=new Map(),exclude=new Set();
+  for(const [d,list] of Object.entries(trip.outfits||{}))list.forEach((x,j)=>{if(x.itemIds.length)exclude.add(sig(x.itemIds));if(!(d===date&&j===i))x.itemIds.forEach(id=>boost.set(id,(boost.get(id)||0)+1))});
+  (trip.swapped=trip.swapped||[]).forEach(s=>exclude.add(s));
+  const cur=trip.outfits[date][i];if(cur.itemIds.length)trip.swapped.push(sig(cur.itemIds));
+  const w=tripDayWeather(trip,date);
+  const p=pickTripOutfit(trip,date,cur.occasion,boost,exclude,new Set(cur.itemIds));
+  if(p)trip.outfits[date][i]={occasion:cur.occasion,itemIds:p.itemIds,why:p.why,tips:p.tips,weather:w.weather,rain:w.rain};
+  else toast("No other combination fits. Try changing that day's occasions.");
+}
+function packList(trip){
+  const count=new Map();
+  for(const list of Object.values(trip.outfits||{}))for(const o of list)for(const id of o.itemIds)count.set(id,(count.get(id)||0)+1);
+  return [...count.entries()].map(([id,n])=>({it:S.items.get(id),n})).filter(x=>x.it)
+    .sort((a,b)=>(ORDER[a.it.category]??9)-(ORDER[b.it.category]??9)||(a.it.name||"").localeCompare(b.it.name||""));
+}
+function renderTrip(t){
+  const nDays=t.days.length;
+  let h=`<button class="btn quiet" data-act="t-back" style="padding-left:0">← Plan</button><h1>${esc(t.name)}</h1>
+  <p class="sub">${esc(t.place)}. ${esc(fmtRange(t.start,t.end))}, ${nDays} ${nDays===1?"day":"days"}.</p>`;
+  const startOff=Math.round((dayMs(t.start)-dayMs(today()))/864e5);
+  if(!t.fc){
+    h+=`<div class="fc"><p>${startOff>15?`The forecast covers 16 days ahead, so it's not available for this trip yet. Outfits assume <b>${esc(t.fallback)}</b> weather until then.`:`No forecast loaded yet. Outfits assume <b>${esc(t.fallback)}</b> weather.`}</p>
+    <div class="chips wrap">${WEATHER.map(v=>chip("t-fb",v,t.fallback===v)).join("")}</div>${startOff<=15?`<p class="note"><button class="linkbtn" data-act="t-refresh">Load the forecast</button></p>`:""}</div>`;
+  }else{
+    const age=Math.round((Date.now()-t.fc.at)/36e5);
+    h+=`<p class="note">Forecast for ${esc(t.name)}, updated ${age<1?"within the hour":age+" hours ago"}. <button class="linkbtn" data-act="t-refresh">Refresh</button></p>`;
+  }
+  const changed=t.days.some(d=>{const w=tripDayWeather(t,d.date);return (t.outfits[d.date]||[]).some(o=>o.weather&&(o.weather!==w.weather||!!o.rain!==!!w.rain))});
+  h+=`<div class="row">${changed?`<p class="note" style="margin:0 0 6px;width:100%">The forecast changed since these outfits were built.</p>`:""}<button class="btn" data-act="t-build">${Object.keys(t.outfits||{}).length?"Rebuild all outfits":"Build outfits"}</button></div>`;
+  for(const day of t.days){
+    const w=tripDayWeather(t,day.date);
+    h+=`<article class="card"><div class="dayhead"><h3>${esc(new Date(dayMs(day.date)).toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"short"}))}</h3>
+    <span class="note">${w.f?`${w.f.feels}°C, ${w.weather}${w.rain?" + rain":""}`:`${esc(w.weather)} (expected)`}</span></div>
+    <div class="chips wrap" style="padding-top:0">${OCCASIONS.map(o=>`<button class="chip" data-act="t-dayocc" data-d="${day.date}" data-v="${esc(o)}" aria-pressed="${day.occasions.includes(o)}">${esc(o)}</button>`).join("")}</div>`;
+    (t.outfits[day.date]||[]).forEach((o,i)=>{
+      h+=`<div class="tripfit"><p class="label">${esc(o.occasion)}</p>${o.itemIds.length?collage(o.itemIds,true):""}<p class="why">${esc(o.why)}</p>
+      ${o.tips&&o.tips.length?`<ul class="tips">${o.tips.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}
+      <div class="row">${o.itemIds.length?`<button class="btn ghost" data-act="t-swap" data-d="${day.date}" data-i="${i}">Swap</button>`:""}${day.date===today()&&o.itemIds.length?`<button class="btn" data-act="t-wear" data-d="${day.date}" data-i="${i}">Wear today</button>`:""}</div></div>`;
+    });
+    if(!day.occasions.length)h+=`<p class="note">No occasions picked for this day.</p>`;
+    h+=`</article>`;
+  }
+  const pl=packList(t);
+  if(pl.length){
+    const packed=pl.filter(x=>t.packed&&t.packed[x.it.id]).length;
+    h+=`<h2>Packing list (${packed} of ${pl.length} packed)</h2>`;
+    let cat="";
+    for(const {it,n} of pl){
+      if(it.category!==cat){cat=it.category;h+=`<p class="packcat">${esc(cat)}</p>`}
+      const on=t.packed&&t.packed[it.id];
+      h+=`<button class="packrow${on?" on":""}" data-act="t-pack" data-id="${it.id}" aria-pressed="${!!on}"><span class="box">${on?"✓":""}</span><img src="${it.photo}" alt=""><span class="nm">${esc(it.name)}${it.qty>1?` <span class="qty">×${it.qty}</span>`:""}<small>${n} ${n===1?"outfit":"outfits"}${!available(it)?`, currently ${esc(it.status.toLowerCase())}`:""}</small></span></button>`;
+    }
+  }
+  h+=`<div class="row" style="margin-top:28px"><button class="btn quiet danger" data-act="t-del">Delete trip</button></div>`;
+  return h;
+}
+
+/* ================= stats ================= */
+function renderStats(){
+  const w=wearStats();const all=items().filter(i=>!i.needsTags);
+  let h=`<h1>Stats</h1>`;
+  if(!all.length)return h+`<p class="sub">Tag some pieces and log a few outfits, and your stats show up here.</p>`;
+  const pieces=all.reduce((n,i)=>n+(i.qty||1),0);
+  const cut=Date.now()-30*864e5;const worn30=new Set();
+  S.log.forEach(e=>{if(dayMs(e.date)>=cut)(e.itemIds||[]).forEach(id=>worn30.add(id))});
+  const pct=Math.round(100*all.filter(i=>worn30.has(i.id)).length/all.length);
+  h+=`<div class="statgrid">
+    <div class="stat"><b>${pieces}</b><span>pieces</span></div>
+    <div class="stat"><b>${S.log.size}</b><span>days logged</span></div>
+    <div class="stat"><b>${pct}%</b><span>of your closet worn in the last 30 days</span></div></div>`;
+  const most=all.filter(i=>w.get(i.id)).sort((a,b)=>w.get(b.id).count-w.get(a.id).count).slice(0,5);
+  if(most.length){h+=`<h2>Most worn</h2>`;most.forEach(i=>h+=statRow(i,`${w.get(i.id).count}x, last ${ago(w.get(i.id).last)}`))}
+  const never=all.filter(i=>!w.get(i.id));
+  if(never.length)h+=`<h2>Never worn yet</h2><p class="sub">${never.length} ${never.length===1?"piece hasn't":"pieces haven't"} been logged yet. <button class="linkbtn" data-act="goto-filter" data-v="Never worn">Show them</button></p>`;
+  const priced=all.filter(i=>+i.price>0);
+  if(priced.length){
+    const total=priced.reduce((s,i)=>s+(+i.price)*(i.qty||1),0);
+    const cpw=i=>(+i.price)/Math.max(1,(w.get(i.id)?.count||0));
+    h+=`<h2>Cost per wear</h2><p class="sub">${priced.length} priced ${priced.length===1?"piece":"pieces"}, €${Math.round(total).toLocaleString()} in total.</p>`;
+    const best=priced.filter(i=>w.get(i.id)).sort((a,b)=>cpw(a)-cpw(b)).slice(0,3);
+    if(best.length){h+=`<p class="packcat">Best value</p>`;best.forEach(i=>h+=statRow(i,`€${cpw(i).toFixed(2)} per wear, worn ${w.get(i.id).count}x`))}
+    const worst=[...priced].sort((a,b)=>cpw(b)-cpw(a)).slice(0,3);
+    h+=`<p class="packcat">Wear these more</p>`;worst.forEach(i=>h+=statRow(i,`€${cpw(i).toFixed(2)} per wear, worn ${w.get(i.id)?.count||0}x`));
+  }else h+=`<h2>Cost per wear</h2><p class="sub">Add what you paid to a piece (under Extras) to see its cost per wear.</p>`;
+  const gaps=findGaps(all);
+  h+=`<h2>Gaps</h2>`+(gaps.length?`<ul class="tips">${gaps.map(g=>`<li>${esc(g)}</li>`).join("")}</ul>`:`<p class="sub">No obvious gaps. Nice.</p>`);
+  h+=`<h2>By category</h2><div class="statgrid">${CATS.filter(c=>all.some(i=>i.category===c)).map(c=>`<div class="stat"><b>${all.filter(i=>i.category===c).reduce((n,i)=>n+(i.qty||1),0)}</b><span>${esc(c)}</span></div>`).join("")}</div>`;
+  return h;
+}
+function statRow(i,txt){return `<div class="packrow static"><img src="${i.photo}" alt=""><span class="nm">${esc(i.name)}<small>${esc(txt)}</small></span></div>`}
+function findGaps(all){
+  const g=[];const outer=all.filter(i=>i.category==="Outerwear");
+  if(!outer.some(i=>i.rainproof==="Yes"&&!MID.has(i.type)))g.push("No rainproof jacket or trench tagged, so rainy days can't get a proper outer layer.");
+  if(!outer.some(i=>!MID.has(i.type)&&W(i)>=3))g.push("No warm coat (warmth: Warm) for cold days.");
+  if(!outer.some(i=>MID.has(i.type)))g.push("No cardigan, blazer or gilet, which bare arms in mild weather rely on.");
+  if(all.some(i=>i.sheer==="Sheer"||i.sheer==="Semi-sheer")&&!all.some(i=>i.category==="Underlayer"))g.push("You have sheer pieces but no underlayers (slip, bike shorts, camisole) tagged.");
+  if(all.some(i=>i.category==="Dress"||(i.category==="Bottom"&&i.type==="Skirt"))&&!all.some(i=>i.category==="Legwear"&&i.type==="Tights"))g.push("No tights tagged, so dresses and skirts can't be styled for cold days.");
+  for(const occ of OCCASIONS){
+    const t=all.filter(i=>(i.formality||[]).includes(occ));if(t.length<3)continue;
+    const hasBase=t.some(i=>i.category==="Dress")||(t.some(i=>i.category==="Top")&&t.some(i=>i.category==="Bottom"));
+    if(!hasBase)g.push(`${occ}: no complete base yet (a top and a bottom, or a dress).`);
+    if(!t.some(i=>i.category==="Shoes"))g.push(`${occ}: no shoes tagged for it.`);
+  }
+  const miss=all.filter(missingDetails).length;
+  if(miss)g.push(`${miss} ${miss===1?"piece is":"pieces are"} missing details like sleeves or fit, which the layering rules need.`);
+  return g;
+}
+
+/* ================= bulk edit ================= */
+function openBulk(){
+  const ids=[...ui.sel].filter(id=>S.items.has(id));if(!ids.length)return;
+  ui.bulk={ids,sets:{formality:{},season:{},material:{}},status:"",warmth:null,brand:""};
+  renderBulk();if(!$("#dlg").open)$("#dlg").showModal();$("#dlgBody").scrollTop=0;
+}
+function triChips(field,opts){
+  const b=ui.bulk,its=b.ids.map(id=>S.items.get(id));
+  return opts.map(v=>{
+    const n=its.filter(i=>arr(i[field]).includes(v)).length;
+    const ch=b.sets[field][v];
+    const state=ch===true?"true":ch===false?"false":n===its.length?"true":n?"mixed":"false";
+    return `<button type="button" class="chip" data-bt="${field}" data-v="${esc(v)}" aria-pressed="${state}">${esc(v)}${state==="mixed"?` <small>(${n})</small>`:""}</button>`;
+  }).join("");
+}
+function renderBulk(){
+  const b=ui.bulk,its=b.ids.map(id=>S.items.get(id));
+  const thumbs=its.slice(0,8).map(i=>`<img src="${i.photo}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:6px">`).join("");
+  $("#dlgBody").innerHTML=`<h3>Edit ${its.length} ${its.length===1?"piece":"pieces"}</h3>
+  <div style="display:flex;gap:6px;flex-wrap:wrap">${thumbs}${its.length>8?`<span class="note" style="margin:0;align-self:center">+${its.length-8} more</span>`:""}</div>
+  <p class="note">Tap a tag to add it to all selected pieces, tap again to remove it from all. Dashed tags are on some pieces only; leave them alone to keep them as they are.</p>
+  <div class="field"><span>Occasion</span><div class="chips wrap">${triChips("formality",OCCASIONS)}</div></div>
+  <div class="field"><span>Only wear in</span><div class="chips wrap">${triChips("season",SEASONS)}</div></div>
+  <div class="field"><span>Material</span><div class="chips wrap">${triChips("material",MATERIALS)}</div></div>
+  <div class="field"><span>Warmth (leave unselected to keep each piece's own)</span><div class="chips wrap">${WARMTH.map((v,i)=>`<button type="button" class="chip" data-bw="${i}" aria-pressed="${b.warmth===i}">${v}</button>`).join("")}</div></div>
+  <div class="field"><span>Status</span><div class="chips wrap">${["In closet","In laundry","At tailor"].map(v=>`<button type="button" class="chip" data-bs="${v}" aria-pressed="${b.status===v}">${v}</button>`).join("")}</div></div>
+  <label class="field"><span>Brand (leave empty to keep each piece's own)</span><input type="text" id="b-brand" value="${esc(b.brand)}" maxlength="40" style="width:100%;margin-top:6px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);min-height:44px"></label>
+  <div class="row"><button class="btn" data-bulk="save">Apply to ${its.length} ${its.length===1?"piece":"pieces"}</button><button class="btn quiet" data-bulk="close">Cancel</button></div>`;
+}
+async function saveBulk(){
+  const b=ui.bulk;b.brand=($("#b-brand")?.value||"").trim();
+  let n=0;
+  for(const id of b.ids){
+    const it=S.items.get(id);if(!it)continue;const x={...it};
+    for(const f of ["formality","season","material"]){
+      if(f==="material"&&!(LAYOUT[x.category]||[]).includes("material"))continue;
+      let cur=arr(x[f]);
+      for(const [v,on] of Object.entries(b.sets[f])){if(on&&!cur.includes(v))cur=[...cur,v];if(!on)cur=cur.filter(c=>c!==v)}
+      x[f]=cur;
+    }
+    if(b.warmth!=null&&NEEDS_WARMTH.has(x.category))x.warmth=b.warmth;
+    if(b.status)x.status=b.status;
+    if(b.brand)x.brand=b.brand;
+    await Store.put("items",id,x);n++;
+  }
+  ui.bulk=null;$("#dlg").close();ui.sel.clear();ui.selecting=false;render();toast(`Updated ${n} ${n===1?"piece":"pieces"}`);
+}
+function bulkClick(e){
+  const b=ui.bulk;
+  const t=e.target.closest("[data-bt]"),w=e.target.closest("[data-bw]"),s=e.target.closest("[data-bs]"),a=e.target.closest("[data-bulk]");
+  const keepBrand=()=>{b.brand=($("#b-brand")?.value||"")};
+  if(t){const f=t.dataset.bt,v=t.dataset.v;const st=t.getAttribute("aria-pressed");b.sets[f][v]=st!=="true";keepBrand();const y=$("#dlgBody").scrollTop;renderBulk();$("#dlgBody").scrollTop=y;return}
+  if(w){const i=+w.dataset.bw;b.warmth=b.warmth===i?null:i;keepBrand();const y=$("#dlgBody").scrollTop;renderBulk();$("#dlgBody").scrollTop=y;return}
+  if(s){b.status=b.status===s.dataset.bs?"":s.dataset.bs;keepBrand();const y=$("#dlgBody").scrollTop;renderBulk();$("#dlgBody").scrollTop=y;return}
+  if(a&&a.dataset.bulk==="save")saveBulk();
+  if(a&&a.dataset.bulk==="close"){ui.bulk=null;$("#dlg").close()}
+}
+/* ================= events ================= */
+document.addEventListener("click",async e=>{
+  const tabBtn=e.target.closest("#tabs button");
+  if(tabBtn){ui.tab=tabBtn.dataset.tab;render();scrollTo(0,0);if(ui.tab==="ideas"||(ui.tab==="plan"&&!ui.tripId&&!ui.newTrip))loadForecast(false);return}
+  const el=e.target.closest("[data-act]");if(!el||el.closest("#dlg"))return;
+  const act=el.dataset.act,v=el.dataset.v,id=el.dataset.id;
+  switch(act){
+    case "add":$("#file").click();break;
+    case "tagnow":startQueue("tag");break;
+    case "reviewnow":startQueue("review");break;
+    case "select":ui.selecting=!ui.selecting;ui.sel.clear();render();break;
+    case "filter":ui.filter=v;render();break;
+    case "item":if(ui.selecting){ui.sel.has(id)?ui.sel.delete(id):ui.sel.add(id);render()}else openItem(id,false);break;
+    case "s-clear":ui.sel.clear();render();break;
+    case "s-wear":{const ids=[...ui.sel];const o=findOutfit(ids);await wearToday(ids,o&&o.id);ui.sel.clear();ui.selecting=false;render();break}
+    case "s-save":{const ids=[...ui.sel];if(ids.length<2){toast("Pick at least 2 pieces for an outfit");break}
+      const ex=findOutfit(ids);await saveOutfit(ids);toast(ex?"You already saved this outfit":"Outfit saved");ui.sel.clear();ui.selecting=false;render();break}
+    case "s-edit":openBulk();break;
+    case "p-choose":startPlanning(v);break;
+    case "p-cancel":ui.planDate=null;render();break;
+    case "p-clear":await Store.remove("plans",v);render();break;
+    case "p-wear":{const p=S.plans.get(v);if(p){const ex=findOutfit(p.itemIds);await wearToday(p.itemIds,ex&&ex.id)}render();break}
+    case "r-plan":{const r=resultAt(el.dataset.ref);const o=r&&r.list[r.i];if(o)await planOutfit(o.itemIds,o.title,o.why);break}
+    case "o-plan":{const o=S.outfits.get(id);if(o)await planOutfit(o.itemIds,o.title,o.why);break}
+    case "t-new":ui.newTrip={q:"",results:[],place:null,start:dateForOffset(7),end:dateForOffset(10),occ:["Holiday"],travel:true,fallback:"Mild",err:""};render();scrollTo(0,0);break;
+    case "t-back":ui.newTrip=null;ui.tripId=null;render();scrollTo(0,0);break;
+    case "t-search":searchPlace();break;
+    case "t-place":ui.newTrip.place=ui.newTrip.results[+v];ui.newTrip.results=[];render();break;
+    case "t-occ":{const a=ui.newTrip.occ;ui.newTrip.occ=a.includes(v)?a.filter(x=>x!==v):[...a,v];render();break}
+    case "t-fb":{if(ui.newTrip)ui.newTrip.fallback=v;else{const t=S.trips.get(ui.tripId);if(t){t.fallback=v;if(!t.fc)buildTrip(t);await Store.put("trips",t.id,t)}}render();break}
+    case "t-create":createTrip();break;
+    case "t-open":ui.tripId=id;render();scrollTo(0,0);refreshTripForecast(S.trips.get(id),false);break;
+    case "t-dayocc":{const t=S.trips.get(ui.tripId);if(!t)break;const day=t.days.find(d=>d.date===el.dataset.d);if(!day)break;
+      day.occasions=day.occasions.includes(v)?day.occasions.filter(x=>x!==v):[...day.occasions,v];
+      buildTrip(t,day.date);await Store.put("trips",t.id,t);render();break}
+    case "t-build":{const t=S.trips.get(ui.tripId);if(t){buildTrip(t);await Store.put("trips",t.id,t);render();toast("Outfits built for every day")}break}
+    case "t-swap":{const t=S.trips.get(ui.tripId);if(t){swapTripOutfit(t,el.dataset.d,+el.dataset.i);await Store.put("trips",t.id,t);render()}break}
+    case "t-pack":{const t=S.trips.get(ui.tripId);if(t){t.packed=t.packed||{};t.packed[id]=!t.packed[id];await Store.put("trips",t.id,t);render()}break}
+    case "t-refresh":refreshTripForecast(S.trips.get(ui.tripId),true);break;
+    case "t-del":{if(el.dataset.armed){await Store.remove("trips",ui.tripId);ui.tripId=null;render();toast("Trip deleted")}else{el.dataset.armed="1";el.textContent="Tap again to delete this trip"}break}
+    case "t-wear":{const t=S.trips.get(ui.tripId);const o=t&&t.outfits[el.dataset.d]&&t.outfits[el.dataset.d][+el.dataset.i];if(o){const oid=await saveOutfit(o.itemIds,o.occasion+" outfit",o.why);await wearToday(o.itemIds,oid)}render();break}
+    case "goto-filter":ui.tab="closet";ui.filter=v;render();scrollTo(0,0);break;
+    case "s-laundry":{const ids=[...ui.sel];const allOff=ids.every(i=>!available(S.items.get(i)||{}));
+      for(const i of ids){const it=S.items.get(i);if(it)await Store.put("items",i,{...it,status:allOff?"In closet":"In laundry"})}
+      toast(allOff?"Back in your closet":"Marked as in the laundry");ui.sel.clear();ui.selecting=false;render();break}
+    case "goto":ui.tab=v;render();break;
+    case "mode":ui.mode=v;render();if(v==="quick")loadForecast(false);break;
+    case "occ":ui.occasion=v;refreshIfStale();break;
+    case "wea":ui.weather=v;ui.weatherManual=true;refreshIfStale();break;
+    case "rain":ui.rain=!ui.rain;ui.weatherManual=true;refreshIfStale();break;
+    case "fcday":ui.fcOff=+v;ui.weatherManual=false;applyForecast();render();loadForecast(false);break;
+    case "usefc":ui.weatherManual=false;applyForecast();render();break;
+    case "refreshfc":FC.status="idle";loadForecast(true);break;
+    case "unanchor":ui.anchor=null;refreshIfStale();break;
+    case "gen":generate();break;
+    case "r-save":{const r=resultAt(el.dataset.ref);const o=r&&r.list[r.i];if(!o)break;await saveOutfit(o.itemIds,o.title,o.why);o.saved=true;render();toast("Outfit saved");break}
+    case "r-wear":{const r=resultAt(el.dataset.ref);const o=r&&r.list[r.i];if(!o)break;const oid=await saveOutfit(o.itemIds,o.title,o.why);o.saved=true;await wearToday(o.itemIds,oid);render();break}
+    case "r-pass":{const r=resultAt(el.dataset.ref);if(!r)break;const o=r.list.splice(r.i,1)[0];render();if(o)await Store.put("passes",rid(),{itemIds:o.itemIds,at:Date.now()}).catch(()=>{});break}
+    case "o-wear":{const o=S.outfits.get(id);if(o)await wearToday(o.itemIds,o.id);render();break}
+    case "o-del":{if(el.dataset.armed){await Store.remove("outfits",id);toast("Outfit removed");render()}else{el.dataset.armed="1";el.textContent="Tap again to remove"}break}
+    case "export":exportBackup();break;
+    case "import":$("#restore").click();break;
+    case "savekey":{const k=$("#keyIn").value.trim();const m=$("#modelIn").value.trim();
+      if(k&&!k.startsWith("••")){if(!k.startsWith("sk-")){toast("That doesn't look like an API key");break}lsSet("closet-api-key",k)}
+      if(!lsGet("closet-api-key")){toast("Paste your API key first");break}
+      lsSet("closet-model",m&&m!==DEFAULT_MODEL?m:null);ui.editKey=false;render();toast("Saved on this phone");break}
+    case "cancelkey":ui.editKey=false;render();break;
+    case "removekey":lsSet("closet-api-key",null);ui.editKey=false;render();toast("Key removed");break;
+    case "editkey":ui.editKey=true;render();break;
+    case "send":{const t=$("#askText").value.trim();if(!t)break;if(!navigator.onLine){ui.askErr="You're offline. Ask AI needs a connection. Quick ideas still work.";render();break}$("#askText").value="";askAI(t);break}
+    case "stop":ui.ctl&&ui.ctl.abort();break;
+    case "clearchat":ui.chat=[];ui.askErr="";render();break;
+  }
+});
+document.addEventListener("input",e=>{
+  if(e.target.id==="q"){ui.q=e.target.value;ui.focusQ=true;render()}
+  if(ui.newTrip){if(e.target.id==="t-q")ui.newTrip.q=e.target.value;if(e.target.id==="t-start")ui.newTrip.start=e.target.value;if(e.target.id==="t-end")ui.newTrip.end=e.target.value}
+});
+document.addEventListener("keydown",e=>{if(e.target.id==="t-q"&&e.key==="Enter"){e.preventDefault();searchPlace()}});
+document.addEventListener("focusout",e=>{if(e.target.id==="q"&&!ui.rendering)ui.focusQ=false});
+document.addEventListener("change",e=>{
+  if(e.target.id==="sort"){ui.sort=e.target.value;render()}
+  if(e.target.id==="t-travel"&&ui.newTrip)ui.newTrip.travel=e.target.checked;
+  if(ui.newTrip&&(e.target.id==="t-start"||e.target.id==="t-end")){ui.newTrip[e.target.id==="t-start"?"start":"end"]=e.target.value}
+  if(e.target.matches('[data-act="neglect"]'))ui.neglect=e.target.checked;
+  if(e.target.id==="file"){const files=[...e.target.files];e.target.value="";addFiles(files)}
+  if(e.target.id==="photoIn"){const f=e.target.files[0];e.target.value="";if(f&&ui.draft){resizeImage(f).then(p=>{ui.draft.photo=p;rerenderSheet();toast("Photo changed. Save to keep it.")}).catch(()=>toast("That photo couldn't be read."))}}
+  if(e.target.id==="restore"){const f=e.target.files[0];e.target.value="";if(f)importBackup(f)}
+});
+addEventListener("online",()=>{if(ui.tab==="ideas")render()});
+addEventListener("offline",()=>{if(ui.tab==="ideas")render()});
+
+/* ================= start ================= */
+(async function init(){
+  try{await Store.load()}
+  catch(e){$("#app").innerHTML=`<p class="err">This browser blocked storage, so the closet can't open. In Safari, turn off Private Browsing and try again.</p>`;return}
+  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+  loadCachedForecast();applyForecast();
+  ui.ready=true;render();
+  if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
+})();
+
+</script>
+</body>
+</html>
