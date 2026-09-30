@@ -3,20 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Closet</title>
+<title>My Closet</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="closet-app" content="4">
-<meta name="apple-mobile-web-app-title" content="Closet">
+<meta name="closet-app" content="5">
+<meta name="apple-mobile-web-app-title" content="My Closet">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#E8EBEF" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#13151A" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F3F2EC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141A16" media="(prefers-color-scheme: dark)">
 <style>
 :root{
-  --bg:#E8EBEF; --surface:#FFFFFF; --ink:#1D2130; --muted:#5F6576; --line:#D2D6DD;
-  --accent:#2F5389; --accent-ink:#FFFFFF; --tag:#F4D8D0; --tag-ink:#6B2A1E; --sheet:#F6F6F4;
+  --bg:#F3F2EC; --surface:#FFFFFF; --ink:#22302A; --muted:#5E6A61; --line:#DCDDD2;
+  --accent:#3E6B52; --accent-ink:#FFFFFF; --tag:#F1E2A8; --tag-ink:#5A4708; --sheet:#F8F7F2;
+  --err-bg:#F6DDD6; --err-ink:#7A2A1C;
   --font:-apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   color-scheme:light;
   box-sizing:border-box;
@@ -25,14 +26,16 @@
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --bg:#13151A; --surface:#1D2028; --ink:#E8EAF0; --muted:#9AA0AF; --line:#2F333D;
-    --accent:#9CB4DD; --accent-ink:#13151A; --tag:#4B2E28; --tag-ink:#F6D9D1; --sheet:#252932;
+    --bg:#141A16; --surface:#1D2520; --ink:#E9EDE6; --muted:#A3AEA5; --line:#2E3A33;
+    --accent:#8DBB9E; --accent-ink:#141A16; --tag:#4A3F18; --tag-ink:#F1E2A8; --sheet:#232C26;
+    --err-bg:#4A2620; --err-ink:#F6DDD6;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#13151A; --surface:#1D2028; --ink:#E8EAF0; --muted:#9AA0AF; --line:#2F333D;
-  --accent:#9CB4DD; --accent-ink:#13151A; --tag:#4B2E28; --tag-ink:#F6D9D1; --sheet:#252932;
+  --bg:#141A16; --surface:#1D2520; --ink:#E9EDE6; --muted:#A3AEA5; --line:#2E3A33;
+  --accent:#8DBB9E; --accent-ink:#141A16; --tag:#4A3F18; --tag-ink:#F1E2A8; --sheet:#232C26;
+  --err-bg:#4A2620; --err-ink:#F6DDD6;
   color-scheme:dark;
 }
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -43,7 +46,8 @@ button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
 main{max-width:760px;margin:0 auto;padding:20px 16px calc(96px + env(safe-area-inset-bottom,0px))}
-h1{font-size:34px;line-height:1.05;font-weight:700;letter-spacing:-.025em;margin:0}
+h1{font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;font-size:36px;line-height:1.05;font-weight:600;letter-spacing:-.015em;margin:0}
+h2{font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif}
 h2{font-size:19px;font-weight:600;letter-spacing:-.01em;margin:28px 0 10px}
 h3{font-size:17px;font-weight:600;margin:0 0 10px}
 p{margin:0}
@@ -84,7 +88,7 @@ p{margin:0}
 .empty h3{margin-bottom:6px}
 .empty p + p{margin-top:8px}
 .note{margin-top:14px;font-size:14px;color:var(--muted)}
-.err{margin-top:14px;color:var(--tag-ink);background:var(--tag);padding:10px 12px;border-radius:8px;font-size:15px}
+.err{margin-top:14px;color:var(--err-ink);background:var(--err-bg);padding:10px 12px;border-radius:8px;font-size:15px}
 
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:14px}
 .lay{background:var(--sheet);border-radius:8px;padding:12px}
@@ -191,6 +195,8 @@ textarea{width:100%;margin-top:6px;padding:10px 12px;border:1px solid var(--line
 .statgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:14px}
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
 .stat b{display:block;font-size:24px;font-weight:700;letter-spacing:-.02em}
+.stoprow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.stoprow span{display:flex;flex-direction:column}.stoprow small{color:var(--muted);font-size:13px}
 .stat span{font-size:13px;color:var(--muted)}
 </style>
 </head>
@@ -212,7 +218,7 @@ textarea{width:100%;margin-top:6px;padding:10px 12px;border:1px solid var(--line
 
 <script>
 /* ================= constants ================= */
-const CATS=["Top","Bottom","Dress","Outerwear","Shoes","Legwear","Underlayer","Bag","Accessory"];
+const CATS=["Top","Bottom","Dress","Outerwear","Shoes","Legwear","Underlayer","Swimwear","Sleepwear","Bag","Accessory"];
 const TYPES={
   Top:["T-shirt","Tank / cami","Shirt / blouse","Knit / sweater","Sweater vest","Bodysuit","Sports top","Other"],
   Bottom:["Trousers","Jeans","Skirt","Shorts","Leggings","Other"],
@@ -222,10 +228,12 @@ const TYPES={
   Legwear:["Tights","Socks"],
   Underlayer:["Slip","Bike shorts","Bodysuit","Bralette","Camisole"],
   Bag:["Handbag","Crossbody","Clutch","Tote","Backpack"],
-  Accessory:["Jewellery","Belt","Scarf","Hat","Sunglasses","Other"]
+  Accessory:["Jewellery","Belt","Scarf","Hat","Sunglasses","Other"],
+  Swimwear:["Swimsuit","Bikini","Swim shorts","Cover-up"],
+  Sleepwear:["Pyjamas","Nightdress","Lounge set"]
 };
 const MID=new Set(["Cardigan","Blazer","Gilet"]);
-const OCCASIONS=["Office","Casual","Going out","Elegant","Travel","Business travel","Holiday","Sport"];
+const OCCASIONS=["Office","Casual","Going out","Elegant","Travel","Business travel","Holiday","Beach","Sport"];
 const WEATHER=["Hot","Warm","Mild","Cool","Cold"];
 const SEASONS=["Spring","Summer","Autumn","Winter"];
 const WEATHER_SEASON={Hot:["Summer"],Warm:["Summer","Spring"],Mild:["Spring","Autumn"],Cool:["Autumn","Winter"],Cold:["Winter"]};
@@ -280,15 +288,17 @@ const LAYOUT={
   Legwear:["opacity","pattern"],
   Underlayer:["fit"],
   Bag:["bagSize","material"],
-  Accessory:["material"]
+  Accessory:["material"],
+  Swimwear:["pattern","material","colors2"],
+  Sleepwear:["material","pattern"]
 };
 const NEEDS_WARMTH=new Set(["Top","Bottom","Dress","Outerwear","Shoes","Legwear"]);
 const NEEDS_TYPE=new Set(["Outerwear","Legwear","Underlayer"]);
-const NO_OCCASION=new Set(["Legwear","Underlayer"]);
-const ORDER={Outerwear:0,Dress:1,Top:1,Bottom:2,Legwear:3,Shoes:4,Bag:5,Accessory:6,Underlayer:7};
+const NO_OCCASION=new Set(["Legwear","Underlayer","Swimwear","Sleepwear"]);
+const ORDER={Outerwear:0,Swimwear:1,Dress:1,Top:1,Bottom:2,Legwear:3,Shoes:4,Bag:5,Accessory:6,Underlayer:7,Sleepwear:8};
 const MAIN=new Set(["Outerwear","Dress","Top","Bottom"]);
 const NEGLECT_DAYS=21;
-const KINDS=["items","outfits","log","passes","plans","trips"];
+const KINDS=["items","outfits","log","passes","plans","trips","meta"];
 const DEFAULT_MODEL="claude-sonnet-5-5";
 
 /* ================= helpers ================= */
@@ -315,7 +325,7 @@ function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("on");
 const DB={
   db:null,
   open(){return new Promise((res,rej)=>{
-    const r=indexedDB.open("closet",2);
+    const r=indexedDB.open("closet",3);
     r.onupgradeneeded=()=>{const d=r.result;for(const k of KINDS)if(!d.objectStoreNames.contains(k))d.createObjectStore(k,{keyPath:"id"})};
     r.onsuccess=()=>{this.db=r.result;res()};r.onerror=()=>rej(r.error);
   })},
@@ -332,6 +342,13 @@ const Store={
   async remove(kind,id){await DB.tx(kind,s=>s.delete(id)).catch(()=>{});S[kind].delete(id)}
 };
 async function migrate(){
+  for(const t of S.trips.values()){
+    if(t.stops)continue;
+    const stop={name:t.name,label:t.place||t.name,lat:t.lat,lon:t.lon,from:t.start,to:t.end,fc:t.fc?{...t.fc,kind:"forecast"}:null};
+    const n={...t,stops:[stop],days:(t.days||[]).map(d=>({...d,stop:0,travel:null,laundry:false})),built:!!Object.keys(t.outfits||{}).length,checks:t.checks||{}};
+    delete n.fc;delete n.place;delete n.lat;delete n.lon;
+    await Store.put("trips",n.id,n);
+  }
   for(const it of S.items.values()){
     if(it.v===3)continue;
     const n={...it};
@@ -366,6 +383,9 @@ function isNeglected(it,w){return !it.needsTags&&daysSince(it,w)>=NEGLECT_DAYS}
 function ago(date){if(!date)return "never";const d=Math.round((dayMs(today())-dayMs(date))/864e5);return d<=0?"today":d===1?"yesterday":d+" days ago"}
 function items(){return [...S.items.values()]}
 const available=it=>!it.status||it.status==="In closet";
+function wearsSince(it){const since=it.washedAt||"";let n=0;for(const e of S.log.values())if(e.date>since&&(e.itemIds||[]).includes(it.id))n++;return n}
+function dueForWash(it){if(!it||it.needsTags)return false;const lim=wearLimit(it);return isFinite(lim)&&available(it)&&wearsSince(it)>=lim*(it.qty||1)}
+const fmtLim=n=>isFinite(n)?String(n):"no limit";
 const W=it=>it.warmth==null?2:+it.warmth;
 const arr=v=>Array.isArray(v)?v:(v?[v]:[]);
 const MULTI_FIELDS=["material","pattern","closure","colors2"];
@@ -482,7 +502,7 @@ function applyParsed(d,p){
 function fitsOccasion(it){return NO_OCCASION.has(it.category)||ui.occasion==="Any"||(it.formality||[]).includes(ui.occasion)}
 function fitsWeather(it){
   if(it.season&&it.season.length&&!WEATHER_SEASON[ui.weather].some(s=>it.season.includes(s)))return false;
-  if(it.category==="Bag"||it.category==="Accessory"||it.category==="Underlayer")return true;
+  if(["Bag","Accessory","Underlayer","Swimwear","Sleepwear"].includes(it.category))return true;
   const max=MAXPIECE[ui.weather]+(it.category==="Bottom"?1:0);
   if(W(it)>Math.min(3,max))return false;
   if(it.category==="Shoes"){
@@ -540,7 +560,8 @@ function seenSets(){
 }
 function suggest(){
   const w=wearStats();
-  const ready=items().filter(i=>!i.needsTags&&(ui.tripMode||available(i)));
+  const ready=items().filter(i=>!i.needsTags&&i.category!=="Sleepwear"&&(ui.tripMode||available(i))&&(!ui.tripUses||(ui.tripUses.get(i.id)||0)<capacity(i)));
+  if(ui.occasion==="Beach")return suggestBeach(ready,w);
   const anchor=ui.anchor&&S.items.get(ui.anchor);
   const pool=ready.filter(i=>(fitsOccasion(i)&&fitsWeather(i))||(anchor&&i.id===anchor.id));
   const by=(c,f)=>pool.filter(i=>i.category===c&&(!f||f(i)));
@@ -741,6 +762,30 @@ function colourRead(visible,mains){
   if(mainCols.includes("Black")&&(mainCols.includes("Brown")||mainCols.includes("Chocolate"))&&!best)score-=.4;
   return {score,line};
 }
+function suggestBeach(ready,w){
+  const swims=ready.filter(i=>i.category==="Swimwear"&&i.type!=="Cover-up");
+  if(!swims.length)return [];
+  const covers=ready.filter(i=>(i.category==="Swimwear"&&i.type==="Cover-up")||(["Dress","Top","Bottom"].includes(i.category)&&(i.formality||[]).includes("Beach")));
+  let shoes=ready.filter(i=>i.category==="Shoes"&&(i.type==="Sandals"||i.toe==="Open"));
+  if(!shoes.length)shoes=ready.filter(i=>i.category==="Shoes"&&(i.formality||[]).includes("Beach"));
+  const bags=ready.filter(i=>i.category==="Bag"&&(i.formality||[]).includes("Beach"));
+  const accs=ready.filter(i=>i.category==="Accessory"&&(i.type==="Hat"||i.type==="Sunglasses"));
+  const {pairs,rejected}=seenSets();const cands=[];
+  for(const sw of shuffle([...swims]))for(let t=0;t<4;t++){
+    const o=[sw];
+    if(covers.length&&Math.random()<.7)o.push(pickRand(covers));
+    if(shoes.length)o.push(pickRand(shoes));
+    if(bags.length&&Math.random()<.6)o.push(pickRand(bags));
+    if(accs.length&&Math.random()<.5)o.push(pickRand(accs));
+    const u=[...new Set(o)],ids=u.map(i=>i.id),s=sig(ids);
+    if(rejected.has(s)||(ui.extraExclude&&ui.extraExclude.has(s)))continue;
+    cands.push(scoreOutfit(u,ids,s,{w,pairs,recent:new Map(),notes:[],tips:["Pack sunscreen."],layered:false}));
+  }
+  cands.sort((a,b)=>b.score-a.score);
+  const picked=[],used=new Set();
+  for(const c of cands){if(used.has(c.s))continue;picked.push(c);used.add(c.s);if(picked.length===3)break}
+  return picked.map(c=>({title:c.title||"Beach day",itemIds:c.ids,why:c.why,tips:c.tips,saved:false}));
+}
 function scoreOutfit(o,ids,s,ctx){
   const {w,pairs,recent,notes,tips,layered}=ctx;
   const neg=it=>isNeglected(it,w.get(it.id));
@@ -799,9 +844,16 @@ function scoreOutfit(o,ids,s,ctx){
     else if(i.category==="Top"||i.category==="Dress")score+=n>=2*q?-3:n?.5:0;
     else if(n)score+=.5;
   }
-  if(ui.avoidMain)for(const i of o)if(ui.avoidMain.has(i.id)&&(i.category==="Top"||i.category==="Dress"||i.category==="Bottom"))score-=2.5;
+  if(ui.avoidMain)for(const i of o)if(ui.avoidMain.has(i.id)&&(i.category==="Top"||i.category==="Dress"||i.category==="Bottom"||i.category==="Swimwear"))score-=2.5;
+  if(ui.carry){const c=ui.carry;for(const i of o){
+    if(i.category==="Shoes"&&!c.shoes.has(i.id)&&c.shoes.size>=2)score-=8;
+    if(i.category==="Outerwear"&&!MID.has(i.type)&&!c.outer.has(i.id)&&c.outer.size>=1)score-=6;
+    if(i.category==="Bag"&&!c.bags.has(i.id)&&c.bags.size>=1)score-=5;}}
+  if(ui.travelDay){const bulky=o.filter(i=>W(i)>=3||["Boots","Coat","Puffer"].includes(i.type));
+    if(bulky.length){score+=2*bulky.length;tips.push(`Wear the ${bulky.slice(0,2).map(i=>i.name).join(" and ")} while travelling, so ${bulky.length>1?"they're":"it's"} not taking up suitcase space.`)}}
+  if(!ui.tripMode)for(const i of o)if(dueForWash(i))score-=3;
   score+=Math.random()*1.5;
-  const tn=o.filter(i=>(i.category==="Top"||i.category==="Bottom"||i.category==="Dress")).map(i=>i.name);
+  const tn=o.filter(i=>(i.category==="Top"||i.category==="Bottom"||i.category==="Dress"||i.category==="Swimwear")).map(i=>i.name);
   const title=cap(tn.join(" + "));
   return {o,ids,s,score,title:title.length>52?title.slice(0,50)+"…":title,why:why.join(" "),tips};
 }
@@ -828,7 +880,7 @@ async function loadForecast(force){
   if(!navigator.onLine){if(!FC.data)FC.status="offline";applyForecast();render();return}
   FC.status="loading";render();
   try{
-    const c=await getPos();
+    const c=await getPos();lsSet("closet-home",JSON.stringify({lat:c.latitude,lon:c.longitude}));
     const url=`https://api.open-meteo.com/v1/forecast?latitude=${c.latitude.toFixed(3)}&longitude=${c.longitude.toFixed(3)}&hourly=apparent_temperature,precipitation_probability&timezone=auto&forecast_days=7`;
     const r=await fetch(url);if(!r.ok)throw {code:9};
     const j=await r.json();if(!j.hourly)throw {code:9};
@@ -839,12 +891,14 @@ async function loadForecast(force){
 function dateForOffset(n){const d=new Date();d.setDate(d.getDate()+n);return ymd(d)}
 function forecastFor(data,key){
   if(!data||!data.time)return null;
+  if(data.shift)key=(+key.slice(0,4)-data.shift)+key.slice(4);
   const idx=[];data.time.forEach((t,i)=>{const h=+t.slice(11,13);if(t.startsWith(key)&&h>=8&&h<=19)idx.push(i)});
   const temps=idx.map(i=>data.apparent_temperature[i]).filter(x=>x!=null);if(!temps.length)return null;
-  const probs=idx.map(i=>data.precipitation_probability[i]).filter(x=>x!=null);
   const feels=Math.round(temps.reduce((a,b)=>a+b,0)/temps.length);
-  const rain=probs.length?Math.max(...probs):0;
-  return {feels,lo:Math.round(Math.min(...temps)),hi:Math.round(Math.max(...temps)),rain,weather:weatherFromTemp(feels),wet:rain>=50};
+  let rain=0,wet=false;
+  if(data.precipitation_probability){const probs=idx.map(i=>data.precipitation_probability[i]).filter(x=>x!=null);rain=probs.length?Math.max(...probs):0;wet=rain>=50}
+  else if(data.precipitation){const wetH=idx.filter(i=>(data.precipitation[i]||0)>=0.2).length;wet=wetH>=2;rain=wet?60:10}
+  return {feels,lo:Math.round(Math.min(...temps)),hi:Math.round(Math.max(...temps)),rain,weather:weatherFromTemp(feels),wet,hist:!!data.shift};
 }
 function dayLabel(key){
   const t=today(),tm=dateForOffset(1);
@@ -992,7 +1046,8 @@ function tile(i){return `<figure><img src="${i.photo}" alt=""><figcaption>${esc(
 function collage(ids,small){
   const its=ids.map(id=>S.items.get(id)).filter(Boolean).sort((a,b)=>(ORDER[a.category]??9)-(ORDER[b.category]??9));
   if(!its.length)return `<p class="note">These pieces were removed from your closet.</p>`;
-  const main=its.filter(i=>MAIN.has(i.category)),extra=its.filter(i=>!MAIN.has(i.category));
+  const isMain=i=>MAIN.has(i.category)||i.category==="Swimwear";
+  const main=its.filter(isMain),extra=its.filter(i=>!isMain(i));
   return `<div class="lay${small?" sm":""}">${main.length?`<div class="main n${Math.min(main.length,4)}">${main.map(tile).join("")}</div>`:""}${extra.length?`<div class="extra">${extra.map(tile).join("")}</div>`:""}</div>`;
 }
 function chip(act,val,on,extra=""){return `<button class="chip" data-act="${act}" data-v="${esc(val)}" aria-pressed="${on}"${extra}>${esc(val)}</button>`}
@@ -1020,11 +1075,13 @@ function renderCloset(){
   if(ui.filter==="Not worn lately")list=all.filter(it=>isNeglected(it,w.get(it.id)));
   else if(ui.filter==="Unavailable")list=all.filter(i=>!available(i));
   else if(ui.filter==="Never worn")list=all.filter(i=>!i.needsTags&&!w.get(i.id));
+  else if(ui.filter==="Due for a wash")list=all.filter(dueForWash);
   else if(ui.filter!=="All")list=all.filter(it=>it.category===ui.filter);
   const neverCount=all.filter(i=>!i.needsTags&&!w.get(i.id)).length;
-  const filters=["All",...(negCount?["Not worn lately"]:[]),...(neverCount?["Never worn"]:[]),...(offCount?["Unavailable"]:[]),...CATS.filter(c=>all.some(i=>i.category===c))];
+  const dueCount=all.filter(dueForWash).length;
+  const filters=["All",...(dueCount?["Due for a wash"]:[]),...(negCount?["Not worn lately"]:[]),...(neverCount?["Never worn"]:[]),...(offCount?["Unavailable"]:[]),...CATS.filter(c=>all.some(i=>i.category===c))];
   const pieces=all.reduce((n,i)=>n+(i.qty||1),0);
-  let h=`<div class="head"><div><h1>Closet</h1><p class="sub">${pieces} ${pieces===1?"piece":"pieces"}${negCount?`, ${negCount} not worn in 3+ weeks`:""}</p></div>
+  let h=`<div class="head"><div><h1>My Closet</h1><p class="sub">${pieces} ${pieces===1?"piece":"pieces"}${negCount?`, ${negCount} not worn in 3+ weeks`:""}</p></div>
   <div class="actions">${all.length?`<button class="btn ghost" data-act="select">${ui.selecting?"Done":"Select"}</button>`:""}<button class="btn" data-act="add">Add pieces</button></div></div>`;
   if(todo)h+=`<div class="banner"><span>${todo} ${todo===1?"piece needs":"pieces need"} tags</span><button class="btn" data-act="tagnow">Tag now</button></div>`;
   else if(review)h+=`<div class="banner"><span>${review} ${review===1?"piece is":"pieces are"} missing details the ideas use</span><button class="btn" data-act="reviewnow">Review</button></div>`;
@@ -1045,7 +1102,7 @@ function renderCloset(){
       ${off?`<span class="status">${esc(it.status)}</span>`:""}
       ${ui.selecting?`<span class="check" aria-hidden="true">${sel?"✓":""}</span>`:""}
       <span class="hangtag${neg?" neg":""}${it.needsTags?" pending":""}"><b>${esc(it.needsTags?"Needs tags":it.name)}</b>${it.qty>1?`<span class="qty">×${it.qty}</span>`:""}</span></button>
-      <p class="meta">${s?`Worn ${s.count}x, ${ago(s.last)}`:"Never worn yet"}</p></div>`;
+      <p class="meta">${dueForWash(it)?"Due for a wash":s?`Worn ${s.count}x, ${ago(s.last)}`:"Never worn yet"}</p></div>`;
   }).join("")}</div>`;
   if(!list.length)h+=`<p class="note">Nothing here.</p>`;
   return h+renderSettings();
@@ -1189,11 +1246,14 @@ function renderSheet(){
     <label class="field"><span>Brand</span><input type="text" id="f-brand" value="${esc(d.brand||"")}" maxlength="40"></label>
     <label class="field"><span>Price you paid (optional, €)</span><input type="text" inputmode="decimal" id="f-price" value="${d.price!=null&&d.price!==""?esc(d.price):""}" placeholder="e.g. 89" maxlength="10"></label>
     <div class="field"><span>How many identical ones you own</span><div class="stepper"><button type="button" data-sheet="qm" aria-label="Fewer">−</button><span id="qtyv">${d.qty||1}</span><button type="button" data-sheet="qp" aria-label="More">+</button></div></div>
+    <div class="field"><span>Wears before washing</span><div class="chips wrap">${[["","Default ("+fmtLim(defaultWears(d))+")"],["1","1"],["2","2"],["3","3"],["4","4"],["5","5"],["-1","No limit"]].map(([v,l])=>`<button type="button" class="chip" data-wp="${v}" aria-pressed="${String(d.wearsPerWash??"")===v}">${l}</button>`).join("")}</div></div>
     <div class="field"><span>Only wear in (optional hard limit)</span><div class="chips wrap">${multi("season",SEASONS,d.season)}</div></div>
     ${["Top","Dress"].includes(cat)?`<label class="toggle"><input type="checkbox" id="f-nolayer" ${d.noLayer?"checked":""}> Never layer this piece</label>`:""}
     </div>`;
   }else h+=`</div>`;
-  h+=`${!ui.inQueue?`<p class="stats">${s?`Worn ${s.count}x, last ${ago(s.last)}.`:"Never worn yet."}</p>`:""}
+  const since=!d.needsTags&&cat?wearsSince(d):0,lim=cat?wearLimit(d):Infinity;
+  h+=`${!ui.inQueue?`<p class="stats">${s?`Worn ${s.count}x, last ${ago(s.last)}.`:"Never worn yet."}${isFinite(lim)&&!d.needsTags?` ${since} of ${lim*(d.qty||1)} wears since the last wash.`:""}</p>`:""}
+  ${!ui.inQueue&&!d.needsTags&&(since>0||d.status==="In laundry")?`<div class="row"><button type="button" class="btn ghost" data-sheet="washed">Mark as washed</button></div>`:""}
   <p class="err" id="d-err" hidden></p>
   <div class="row"><button class="btn" data-sheet="save">${ui.inQueue?(isLast?"Save and finish":"Save and next"):"Save changes"}</button>
   ${ui.inQueue?`<button class="btn quiet" data-sheet="skip">${isLast?"Finish later":"Skip"}</button>`:`<button class="btn ghost" data-sheet="style" ${d.needsTags?"disabled":""}>Style this piece</button>`}</div>
@@ -1219,7 +1279,7 @@ async function sheetSave(){
   syncText();const d=ui.draft,cat=d.category;
   const miss=[!cat&&"category",cat&&NEEDS_TYPE.has(cat)&&!d.type&&"type",!d.color&&"main colour",cat&&!NO_OCCASION.has(cat)&&!(d.formality||[]).length&&"occasion",cat&&NEEDS_WARMTH.has(cat)&&d.warmth==null&&"warmth"].filter(Boolean);
   if(miss.length){const e=$("#d-err");e.textContent="Still needed: "+miss.join(", ")+".";e.hidden=false;e.scrollIntoView({block:"center"});return}
-  const keep=new Set([...(LAYOUT[cat]||[]),"color","type","warmth","formality","season","brand","desc","noLayer","qty","status","price"]);
+  const keep=new Set([...(LAYOUT[cat]||[]),"color","type","warmth","formality","season","brand","desc","noLayer","qty","status","price","wearsPerWash","washedAt"]);
   const clean={v:3,photo:d.photo,addedAt:d.addedAt,category:cat};
   for(const k of keep)if(d[k]!==undefined&&d[k]!==null&&d[k]!==""&&!(Array.isArray(d[k])&&!d[k].length&&MULTI_FIELDS.includes(k)))clean[k]=d[k];
   if(clean.colors2)clean.colors2=clean.colors2.filter(c=>c!==clean.color);
@@ -1229,6 +1289,7 @@ async function sheetSave(){
   const typed=d.nameInput;
   clean.name=typed&&typed!==auto?typed:auto;
   clean.autoName=auto;clean.needsTags=false;clean.needsReview=false;
+  const prev=S.items.get(ui.draftId);if(prev&&prev.status==="In laundry"&&clean.status==="In closet")clean.washedAt=today();
   try{await Store.put("items",ui.draftId,clean)}catch(e){return}
   if(ui.inQueue)sheetNext();else{$("#dlg").close();ui.draft=null;render();toast("Saved")}
 }
@@ -1244,6 +1305,8 @@ $("#dlgBody").addEventListener("click",async e=>{
     f.parentElement.querySelectorAll("[data-f]").forEach(x=>x.setAttribute("aria-pressed",String(x===f&&d[k]!=="")));
     return;
   }
+  const wp=e.target.closest("[data-wp]");
+  if(wp){const v=wp.dataset.wp;d.wearsPerWash=v===""?"":+v;wp.parentElement.querySelectorAll("[data-wp]").forEach(x=>x.setAttribute("aria-pressed",String(x===wp)));return}
   if(m){const k=m.dataset.m,v=m.dataset.v;const cur=arr(d[k]);d[k]=cur.includes(v)?cur.filter(x=>x!==v):[...cur,v];m.setAttribute("aria-pressed",String(d[k].includes(v)));return}
   if(!a)return;
   const act=a.dataset.sheet;
@@ -1251,6 +1314,7 @@ $("#dlgBody").addEventListener("click",async e=>{
     syncText();const text=d.desc||"";if(!text.trim()){toast("Paste a description first");return}
     const n=applyParsed(d,parseDesc(text));rerenderSheet();toast(n?`Filled ${n} ${n===1?"tag":"tags"}. Check them below.`:"Nothing new found in that text");
   }
+  if(act==="washed"){const it=S.items.get(ui.draftId);if(it){await Store.put("items",it.id,{...it,washedAt:today(),status:"In closet"});d.washedAt=today();d.status="In closet";rerenderSheet();render();toast("Marked as washed")}return}
   if(act==="photo"){syncText();$("#photoIn").click();return}
   if(act==="dup"){
     const src=S.items.get(ui.draftId);if(!src)return;
@@ -1312,12 +1376,21 @@ function renderPlan(){
   h+=`<div class="row"><button class="btn" data-act="t-new">New trip</button></div>`;
   return h;
 }
-function fmtRange(a,b){
-  const o={day:"numeric",month:"short"};
-  return new Date(dayMs(a)).toLocaleDateString(undefined,o)+" to "+new Date(dayMs(b)).toLocaleDateString(undefined,o);
-}
 
 /* ================= trips ================= */
+const DEFAULT_CHECKLIST=["Passport or ID","Phone charger","Toiletries","Medication","Headphones","Sunglasses"];
+function getChecklist(){const m=S.meta.get("checklist");return m&&Array.isArray(m.items)?m.items:DEFAULT_CHECKLIST}
+function placeName(trip,p){return p==="home"?"Home":(trip.stops[p]?trip.stops[p].name:"?")}
+function fmtRange(a,b){
+  const o={day:"numeric",month:"short"};
+  return a===b?new Date(dayMs(a)).toLocaleDateString(undefined,o):new Date(dayMs(a)).toLocaleDateString(undefined,o)+" to "+new Date(dayMs(b)).toLocaleDateString(undefined,o);
+}
+function tripSummary(t){return t.stops.map(s=>`${s.name} (${fmtRange(s.from,s.to)})`).join(", ")}
+
+/* ---- creating a trip ---- */
+function newTripState(){
+  return {name:"",stops:[],q:"",results:[],pick:null,from:dateForOffset(7),to:dateForOffset(10),fromHome:true,carryOn:false,occ:["Holiday"],fallback:"Mild",err:"",searching:false};
+}
 async function searchPlace(){
   const t=ui.newTrip;if(!t)return;const q=(t.q||"").trim();if(!q){toast("Type a city first");return}
   if(!navigator.onLine){t.err="You're offline. Searching for a destination needs a connection.";render();return}
@@ -1333,116 +1406,230 @@ async function searchPlace(){
 function renderNewTrip(){
   const t=ui.newTrip;
   let h=`<button class="btn quiet" data-act="t-back" style="padding-left:0">← Plan</button><h1>New trip</h1>
-  <label class="field"><span>Destination</span></label>
-  <div class="tools" style="margin-top:6px"><input type="search" id="t-q" value="${esc(t.q)}" placeholder="City, e.g. Lisbon" aria-label="Destination"><button class="btn ghost" data-act="t-search">${t.searching?"Searching…":"Search"}</button></div>`;
+  <p class="sub">Add each place you'll stay, with its dates. Then you'll set what each day looks like.</p>`;
+  if(t.stops.length){
+    h+=`<h2>Stops</h2>`;
+    t.stops.forEach((s,i)=>h+=`<div class="stoprow"><span><b>${esc(s.name)}</b><small>${esc(fmtRange(s.from,s.to))}</small></span><button class="btn quiet" data-act="t-rmstop" data-v="${i}" aria-label="Remove ${esc(s.name)}">Remove</button></div>`);
+  }
+  h+=`<h2>${t.stops.length?"Add another stop":"First stop"}</h2>
+  <div class="tools" style="margin-top:6px"><input type="search" id="t-q" value="${esc(t.q)}" placeholder="City, for example Lisbon" aria-label="City"><button class="btn ghost" data-act="t-search">${t.searching?"Searching…":"Search"}</button></div>`;
   if(t.err)h+=`<p class="err">${esc(t.err)}</p>`;
   if(t.results.length)h+=`<div class="chips wrap">${t.results.map((p,i)=>`<button class="chip" data-act="t-place" data-v="${i}" aria-pressed="false">${esc(p.label)}</button>`).join("")}</div>`;
-  if(t.place)h+=`<p class="note">Destination: <b>${esc(t.place.label)}</b></p>`;
-  h+=`<div class="tools" style="margin-top:18px"><label class="field" style="margin:0;flex:1"><span>From</span><input type="date" id="t-start" value="${esc(t.start)}" class="datein"></label>
-  <label class="field" style="margin:0;flex:1"><span>To</span><input type="date" id="t-end" value="${esc(t.end)}" class="datein"></label></div>
-  <div class="field"><span>What most days look like</span><div class="chips wrap">${OCCASIONS.map(o=>chip("t-occ",o,t.occ.includes(o))).join("")}</div></div>
-  <label class="toggle"><input type="checkbox" id="t-travel" ${t.travel?"checked":""}> First and last day are travel days</label>
-  <div class="field"><span>Expected weather, until the forecast is available</span><div class="chips wrap">${WEATHER.map(v=>chip("t-fb",v,t.fallback===v)).join("")}</div></div>
-  <p class="note">You can change the occasions for each day afterwards.</p>
-  <div class="row"><button class="btn" data-act="t-create">Create trip</button></div>`;
+  if(t.pick){
+    h+=`<p class="note">Stop: <b>${esc(t.pick.label)}</b></p>
+    <div class="tools" style="margin-top:8px"><label class="field" style="margin:0;flex:1"><span>Arrive</span><input type="date" id="t-from" value="${esc(t.from)}" class="datein"></label>
+    <label class="field" style="margin:0;flex:1"><span>Leave</span><input type="date" id="t-to" value="${esc(t.to)}" class="datein"></label></div>
+    <div class="row"><button class="btn ghost" data-act="t-addstop">Add this stop</button></div>`;
+  }
+  if(t.stops.length){
+    h+=`<h2>Trip settings</h2>
+    <label class="field"><span>Trip name (optional)</span><input type="text" id="t-name" value="${esc(t.name)}" placeholder="${esc(t.stops.map(s=>s.name).join(" and "))}" class="datein"></label>
+    <label class="toggle"><input type="checkbox" id="t-home" ${t.fromHome?"checked":""}> I travel from home on the first day and back on the last</label>
+    <label class="toggle"><input type="checkbox" id="t-carry" ${t.carryOn?"checked":""}> Carry-on only (pack tighter)</label>
+    <div class="field"><span>What most days look like (you can change each day next)</span><div class="chips wrap">${OCCASIONS.map(o=>chip("t-occ",o,t.occ.includes(o))).join("")}</div></div>
+    <div class="field"><span>Expected weather, when there's no forecast or history</span><div class="chips wrap">${WEATHER.map(v=>chip("t-fb",v,t.fallback===v)).join("")}</div></div>
+    <div class="row"><button class="btn" data-act="t-create">Create trip</button></div>`;
+  }
   return h;
+}
+function addStop(){
+  const t=ui.newTrip;if(!t.pick)return;
+  if(!t.from||!t.to||t.to<t.from){toast("Check the dates for this stop");return}
+  t.stops.push({...t.pick,from:t.from,to:t.to});t.stops.sort((a,b)=>a.from.localeCompare(b.from));
+  const nx=new Date(dayMs(t.to));const nx2=new Date(dayMs(t.to)+3*864e5);
+  t.pick=null;t.q="";t.results=[];t.from=ymd(nx);t.to=ymd(nx2);render();
 }
 async function createTrip(){
   const t=ui.newTrip;
-  if(!t.place){toast("Search for and pick a destination first");return}
-  if(!t.start||!t.end||t.end<t.start){toast("Check the dates");return}
-  const days=[];for(let d=dayMs(t.start);d<=dayMs(t.end);d+=864e5)days.push(ymd(new Date(d)));
-  if(days.length>30){toast("Trips can be up to 30 days");return}
+  if(t.pick&&!t.stops.length)addStop();
+  if(!t.stops.length){toast("Add at least one stop");return}
+  const start=t.stops.reduce((m,s)=>s.from<m?s.from:m,t.stops[0].from),end=t.stops.reduce((m,s)=>s.to>m?s.to:m,t.stops[0].to);
+  const dates=[];for(let d=dayMs(start);d<=dayMs(end);d+=864e5)dates.push(ymd(new Date(d)));
+  if(dates.length>45){toast("Trips can be up to 45 days");return}
   if(!t.occ.length){toast("Pick at least one occasion");return}
+  const stops=t.stops.map(s=>({name:s.name,label:s.label,lat:s.lat,lon:s.lon,from:s.from,to:s.to}));
+  const days=dates.map((date,i)=>{
+    let stop=stops.findIndex(s=>s.from<=date&&s.to>=date);if(stop<0){stop=0;for(let k=0;k<stops.length;k++)if(stops[k].from<=date)stop=k}
+    let travel=null;
+    const next=stops.findIndex((s,k)=>k>stop&&s.from===date);
+    if(t.fromHome&&i===0)travel={from:"home",to:stop};
+    else if(t.fromHome&&i===dates.length-1)travel={from:stops.length-1,to:"home"};
+    else if(next>0&&stops[stop].to===date)travel={from:stop,to:next};
+    return {date,stop:travel&&travel.to!=="home"?travel.to:stop,travel,occasions:travel?["Travel"]:[...t.occ],laundry:false};
+  });
   const id=rid();
-  const trip={id,name:t.place.name,place:t.place.label,lat:t.place.lat,lon:t.place.lon,start:t.start,end:t.end,fallback:t.fallback,createdAt:Date.now(),packed:{},outfits:{},
-    days:days.map((date,i)=>({date,occasions:t.travel&&(i===0||i===days.length-1)?["Travel"]:[...t.occ]}))};
+  const trip={id,name:t.name.trim()||stops.map(s=>s.name).join(" and "),stops,days,start,end,carryOn:t.carryOn,fallback:t.fallback,createdAt:Date.now(),packed:{},checks:{},outfits:{},built:false};
   ui.newTrip=null;ui.tripId=id;
-  await Store.put("trips",id,trip);
-  render();scrollTo(0,0);
-  await refreshTripForecast(trip,true,true);
+  await Store.put("trips",id,trip);render();scrollTo(0,0);
+  refreshTripWeather(trip,true);
 }
-async function refreshTripForecast(trip,force,thenBuild){
-  if(!trip)return;
-  const startOff=Math.round((dayMs(trip.start)-dayMs(today()))/864e5);
-  const inRange=startOff<=15&&dayMs(trip.end)>=dayMs(today());
-  const fresh=trip.fc&&Date.now()-trip.fc.at<6*36e5;
-  if(inRange&&navigator.onLine&&(force||!fresh)){
-    try{
-      const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${(+trip.lat).toFixed(3)}&longitude=${(+trip.lon).toFixed(3)}&hourly=apparent_temperature,precipitation_probability&timezone=auto&forecast_days=16`);
-      const j=await r.json();if(j.hourly){trip.fc={at:Date.now(),data:j.hourly}}
-    }catch(e){if(force)toast("Couldn't load the forecast. Using your expected weather.")}
+
+/* ---- weather for stops, home and travel days ---- */
+async function fetchHourly(lat,lon,start,end){
+  const startOff=Math.round((dayMs(start)-dayMs(today()))/864e5);
+  if(startOff<=15&&dayMs(end)>=dayMs(today())){
+    const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${(+lat).toFixed(3)}&longitude=${(+lon).toFixed(3)}&hourly=apparent_temperature,precipitation_probability&timezone=auto&forecast_days=16`);
+    const j=await r.json();return j.hourly?{at:Date.now(),data:j.hourly,kind:"forecast"}:null;
   }
-  if(thenBuild||!Object.keys(trip.outfits||{}).length)buildTrip(trip);
-  await Store.put("trips",trip.id,trip);
-  if(ui.tripId===trip.id)render();
+  const shift=d=>(+d.slice(0,4)-1)+d.slice(4);
+  const r=await fetch(`https://archive-api.open-meteo.com/v1/archive?latitude=${(+lat).toFixed(3)}&longitude=${(+lon).toFixed(3)}&start_date=${shift(start)}&end_date=${shift(end)}&hourly=apparent_temperature,precipitation&timezone=auto`);
+  const j=await r.json();if(!j.hourly)return null;j.hourly.shift=1;return {at:Date.now(),data:j.hourly,kind:"history"};
 }
-function tripDayWeather(trip,date){
-  const f=forecastFor(trip.fc&&trip.fc.data,date);
-  return f?{weather:f.weather,rain:f.wet,f}:{weather:trip.fallback||"Mild",rain:false,f:null};
+async function refreshTripWeather(trip,force){
+  if(!trip)return;
+  if(navigator.onLine){
+    const stale=x=>!x||force||Date.now()-x.at>6*36e5||(x.kind==="history"&&Math.round((dayMs(trip.start)-dayMs(today()))/864e5)<=15);
+    for(const s of trip.stops){if(stale(s.fc)){try{s.fc=await fetchHourly(s.lat,s.lon,s.from,s.to)||s.fc}catch(e){}}}
+    const home=JSON.parse(lsGet("closet-home")||"null");
+    if(home&&trip.days.some(d=>d.travel&&(d.travel.from==="home"||d.travel.to==="home"))&&stale(trip.homeFc)){
+      try{trip.homeFc=await fetchHourly(home.lat,home.lon,trip.start,trip.end)||trip.homeFc}catch(e){}
+    }
+  }
+  await Store.put("trips",trip.id,trip);if(ui.tripId===trip.id)render();
 }
+function placeWeather(trip,p,date){
+  if(p==="home")return forecastFor(trip.homeFc&&trip.homeFc.data,date)||forecastFor(FC.data,date);
+  const s=trip.stops[p];return s&&s.fc?forecastFor(s.fc.data,date):null;
+}
+function tripDayWeather(trip,day){
+  const places=day.travel?[day.travel.from,day.travel.to]:[day.stop];
+  const fs=places.map(p=>placeWeather(trip,p,day.date)).filter(Boolean);
+  if(!fs.length)return {weather:trip.fallback||"Mild",rain:false,f:null,src:"expected"};
+  const cold=fs.reduce((a,b)=>b.feels<a.feels?b:a);
+  return {weather:cold.weather,rain:fs.some(x=>x.wet),f:cold,src:fs.some(x=>x.hist)?"last year":"forecast"};
+}
+
+/* ---- wear limits ---- */
+function defaultWears(it){
+  switch(it.category){
+    case "Top":case "Dress":case "Legwear":case "Underlayer":return 1;
+    case "Bottom":return 2;
+    case "Outerwear":return it.type==="Cardigan"?2:Infinity;
+    case "Swimwear":return 2;
+    case "Sleepwear":return 3;
+    default:return Infinity;
+  }
+}
+function wearLimit(it){const v=it.wearsPerWash;if(v===-1)return Infinity;if(+v>0)return +v;return defaultWears(it)}
+function capacity(it){return wearLimit(it)*(it.qty||1)}
+function bareUnder(o){
+  const tops=o.filter(i=>i.category==="Top"||i.category==="Dress");
+  if(!tops.length)return false;
+  return Math.max(...tops.map(i=>i.sleeves?SLEEVE_RANK[i.sleeves]:99))<=2;
+}
+function recordUses(uses,o){
+  const bare=bareUnder(o);
+  for(const i of o){
+    const lim=wearLimit(i);if(!isFinite(lim))continue;
+    if(i.category==="Outerwear"&&MID.has(i.type)&&bare)uses.set(i.id,capacity(i));
+    else uses.set(i.id,(uses.get(i.id)||0)+1);
+  }
+}
+
+/* ---- building outfits ---- */
 function withBrief(b,fn){
-  const keys=["occasion","weather","rain","anchor","neglect","packBoost","extraExclude","tripMode","avoidMain"];const save={};
+  const keys=["occasion","weather","rain","anchor","neglect","packBoost","extraExclude","tripMode","avoidMain","tripUses","carry","travelDay"];const save={};
   keys.forEach(k=>save[k]=ui[k]);Object.assign(ui,b);
   try{return fn()}finally{keys.forEach(k=>ui[k]=save[k])}
 }
-function pickTripOutfit(trip,date,occ,boost,exclude,avoid){
-  const w=tripDayWeather(trip,date);
-  const r=withBrief({occasion:occ,weather:w.weather,rain:w.rain,anchor:null,neglect:false,packBoost:boost,extraExclude:exclude,tripMode:true,avoidMain:avoid||null},()=>suggest());
-  return r[0]||null;
+function pickTripOutfit(trip,day,occ,ctx,avoid){
+  const w=tripDayWeather(trip,day);
+  const brief={occasion:occ,weather:w.weather,rain:w.rain,anchor:null,neglect:false,packBoost:ctx.boost,extraExclude:ctx.exclude,tripMode:true,avoidMain:avoid||null,tripUses:ctx.uses,carry:trip.carryOn?ctx.carry:null,travelDay:occ==="Travel"||!!day.travel};
+  const r=withBrief(brief,()=>suggest());
+  if(r[0])return {pick:r[0],w};
+  const loose=withBrief({...brief,tripUses:null},()=>suggest());
+  return {pick:null,w,short:!!loose[0]};
+}
+function noteUse(ctx,o){
+  recordUses(ctx.uses,o);
+  for(const i of o){ctx.boost.set(i.id,(ctx.boost.get(i.id)||0)+1);
+    if(i.category==="Shoes")ctx.carry.shoes.add(i.id);if(i.category==="Outerwear"&&!MID.has(i.type))ctx.carry.outer.add(i.id);if(i.category==="Bag")ctx.carry.bags.add(i.id)}
+  ctx.exclude.add(sig(o.map(i=>i.id)));
 }
 function buildTrip(trip,onlyDate){
-  const out=onlyDate?{...(trip.outfits||{})}:{};
-  const boost=new Map(),exclude=new Set();const bump=id=>boost.set(id,(boost.get(id)||0)+1);
-  if(onlyDate)for(const [d,list] of Object.entries(out))if(d!==onlyDate)list.forEach(x=>{x.itemIds.forEach(bump);if(x.itemIds.length)exclude.add(sig(x.itemIds))});
+  const ctx={uses:new Map(),boost:new Map(),exclude:new Set(),carry:{shoes:new Set(),outer:new Set(),bags:new Set()}};
+  const out={};
   for(const day of trip.days){
-    if(onlyDate&&day.date!==onlyDate)continue;
-    const w=tripDayWeather(trip,day.date);
-    out[day.date]=day.occasions.map(occ=>{
-      const p=pickTripOutfit(trip,day.date,occ,boost,exclude);
-      if(!p)return {occasion:occ,itemIds:[],why:"Nothing in your closet fits this occasion and weather yet.",weather:w.weather,rain:w.rain};
-      p.itemIds.forEach(bump);exclude.add(sig(p.itemIds));
-      return {occasion:occ,itemIds:p.itemIds,why:p.why,tips:p.tips,weather:w.weather,rain:w.rain};
-    });
+    const keep=onlyDate&&day.date!==onlyDate&&trip.outfits&&trip.outfits[day.date];
+    if(keep){
+      out[day.date]=trip.outfits[day.date];
+      for(const o of out[day.date])if(o.itemIds.length)noteUse(ctx,o.itemIds.map(id=>S.items.get(id)).filter(Boolean));
+    }else{
+      out[day.date]=day.occasions.map(occ=>{
+        const {pick,w,short}=pickTripOutfit(trip,day,occ,ctx);
+        if(!pick)return {occasion:occ,itemIds:[],short,why:short?`Not enough fresh pieces left for ${occ.toLowerCase()} by this day. Add a laundry day earlier, or tag more pieces for it.`:`Nothing in your closet fits ${occ.toLowerCase()} in ${w.weather.toLowerCase()} weather yet.`,weather:w.weather,rain:w.rain};
+        noteUse(ctx,pick.itemIds.map(id=>S.items.get(id)).filter(Boolean));
+        return {occasion:occ,itemIds:pick.itemIds,why:pick.why,tips:pick.tips,weather:w.weather,rain:w.rain};
+      });
+    }
+    if(day.laundry)ctx.uses.clear();
   }
-  trip.outfits=out;
+  trip.outfits=out;trip.built=true;
 }
 function swapTripOutfit(trip,date,i){
-  const boost=new Map(),exclude=new Set();
-  for(const [d,list] of Object.entries(trip.outfits||{}))list.forEach((x,j)=>{if(x.itemIds.length)exclude.add(sig(x.itemIds));if(!(d===date&&j===i))x.itemIds.forEach(id=>boost.set(id,(boost.get(id)||0)+1))});
-  (trip.swapped=trip.swapped||[]).forEach(s=>exclude.add(s));
+  const ctx={uses:new Map(),boost:new Map(),exclude:new Set(),carry:{shoes:new Set(),outer:new Set(),bags:new Set()}};
+  let target=null;
+  for(const day of trip.days){
+    (trip.outfits[day.date]||[]).forEach((o,j)=>{
+      if(o.itemIds.length)ctx.exclude.add(sig(o.itemIds));
+      if(day.date===date&&j===i){target=day;return}
+      if(o.itemIds.length)noteUse(ctx,o.itemIds.map(id=>S.items.get(id)).filter(Boolean));
+    });
+    if(day.laundry&&day.date<date)ctx.uses.clear();
+  }
+  (trip.swapped=trip.swapped||[]).forEach(s=>ctx.exclude.add(s));
   const cur=trip.outfits[date][i];if(cur.itemIds.length)trip.swapped.push(sig(cur.itemIds));
-  const w=tripDayWeather(trip,date);
-  const p=pickTripOutfit(trip,date,cur.occasion,boost,exclude,new Set(cur.itemIds));
-  if(p)trip.outfits[date][i]={occasion:cur.occasion,itemIds:p.itemIds,why:p.why,tips:p.tips,weather:w.weather,rain:w.rain};
+  const {pick,w}=pickTripOutfit(trip,target,cur.occasion,ctx,new Set(cur.itemIds));
+  if(pick)trip.outfits[date][i]={occasion:cur.occasion,itemIds:pick.itemIds,why:pick.why,tips:pick.tips,weather:w.weather,rain:w.rain};
   else toast("No other combination fits. Try changing that day's occasions.");
 }
+
+/* ---- packing ---- */
 function packList(trip){
   const count=new Map();
   for(const list of Object.values(trip.outfits||{}))for(const o of list)for(const id of o.itemIds)count.set(id,(count.get(id)||0)+1);
   return [...count.entries()].map(([id,n])=>({it:S.items.get(id),n})).filter(x=>x.it)
     .sort((a,b)=>(ORDER[a.it.category]??9)-(ORDER[b.it.category]??9)||(a.it.name||"").localeCompare(b.it.name||""));
 }
-function renderTrip(t){
-  const nDays=t.days.length;
-  let h=`<button class="btn quiet" data-act="t-back" style="padding-left:0">← Plan</button><h1>${esc(t.name)}</h1>
-  <p class="sub">${esc(t.place)}. ${esc(fmtRange(t.start,t.end))}, ${nDays} ${nDays===1?"day":"days"}.</p>`;
-  const startOff=Math.round((dayMs(t.start)-dayMs(today()))/864e5);
-  if(!t.fc){
-    h+=`<div class="fc"><p>${startOff>15?`The forecast covers 16 days ahead, so it's not available for this trip yet. Outfits assume <b>${esc(t.fallback)}</b> weather until then.`:`No forecast loaded yet. Outfits assume <b>${esc(t.fallback)}</b> weather.`}</p>
-    <div class="chips wrap">${WEATHER.map(v=>chip("t-fb",v,t.fallback===v)).join("")}</div>${startOff<=15?`<p class="note"><button class="linkbtn" data-act="t-refresh">Load the forecast</button></p>`:""}</div>`;
-  }else{
-    const age=Math.round((Date.now()-t.fc.at)/36e5);
-    h+=`<p class="note">Forecast for ${esc(t.name)}, updated ${age<1?"within the hour":age+" hours ago"}. <button class="linkbtn" data-act="t-refresh">Refresh</button></p>`;
+function packExtras(trip){
+  const n=trip.days.length,nights=Math.max(0,n-1);const out=[];
+  out.push({key:"underwear",label:`Underwear × ${n+1}`,hint:"one per day plus a spare"});
+  let socks=0;
+  for(const d of trip.days){const list=trip.outfits[d.date]||[];
+    if(list.some(o=>{const its=o.itemIds.map(id=>S.items.get(id)).filter(Boolean);return its.some(i=>i.category==="Shoes"&&i.toe!=="Open"&&i.type!=="Sandals")&&!its.some(i=>i.category==="Legwear")}))socks++}
+  if(socks)out.push({key:"socks",label:`Socks × ${socks}`,hint:"for days with closed shoes"});
+  if(nights){
+    const w=wearStats();const sleep=items().filter(i=>i.category==="Sleepwear"&&!i.needsTags).sort((a,b)=>(w.get(a.id)?.count||0)-(w.get(b.id)?.count||0));
+    const need=Math.max(1,Math.ceil(nights/3));
+    if(sleep.length)sleep.slice(0,need).forEach(i=>out.push({key:"sleep:"+i.id,label:i.name,item:i,hint:"sleepwear"}));
+    else out.push({key:"sleepwear",label:`Sleepwear × ${need}`,hint:`for ${nights} ${nights===1?"night":"nights"}`});
   }
-  const changed=t.days.some(d=>{const w=tripDayWeather(t,d.date);return (t.outfits[d.date]||[]).some(o=>o.weather&&(o.weather!==w.weather||!!o.rain!==!!w.rain))});
-  h+=`<div class="row">${changed?`<p class="note" style="margin:0 0 6px;width:100%">The forecast changed since these outfits were built.</p>`:""}<button class="btn" data-act="t-build">${Object.keys(t.outfits||{}).length?"Rebuild all outfits":"Build outfits"}</button></div>`;
+  return out;
+}
+
+/* ---- trip view ---- */
+function renderTrip(t){
+  const n=t.days.length;
+  let h=`<button class="btn quiet" data-act="t-back" style="padding-left:0">← Plan</button><h1>${esc(t.name)}</h1>
+  <p class="sub">${esc(tripSummary(t))}. ${n} ${n===1?"day":"days"}.</p>
+  <div class="chips wrap">${chip("t-carry","Carry-on only",!!t.carryOn)}</div>`;
+  const srcs=new Set(t.days.map(d=>tripDayWeather(t,d).src));
+  h+=`<p class="note">${srcs.has("forecast")?"Weather from the forecast where available. ":""}${srcs.has("last year")?"Days beyond the 16-day forecast use last year's weather on the same dates. ":""}${srcs.has("expected")?`Days without data assume ${esc((t.fallback||"Mild").toLowerCase())} weather. `:""}<button class="linkbtn" data-act="t-refresh">Refresh weather</button></p>`;
+  if(!t.built)h+=`<div class="banner"><span>Set each day's occasions, travel days and any laundry day, then build the outfits.</span></div>`;
+  const shortDays=t.days.filter(d=>(t.outfits[d.date]||[]).some(o=>o.short));
+  if(t.built&&shortDays.length)h+=`<p class="err">${shortDays.length} ${shortDays.length===1?"day doesn't":"days don't"} have enough fresh pieces. Add a laundry day before ${esc(dayLabel(shortDays[0].date))}, or tag more pieces for those occasions.</p>`;
+  h+=`<div class="row"><button class="btn" data-act="t-build">${t.built?"Rebuild all outfits":"Build outfits"}</button></div>`;
+  const places=[["home","Home"],...t.stops.map((s,i)=>[String(i),s.name])];
   for(const day of t.days){
-    const w=tripDayWeather(t,day.date);
-    h+=`<article class="card"><div class="dayhead"><h3>${esc(new Date(dayMs(day.date)).toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"short"}))}</h3>
-    <span class="note">${w.f?`${w.f.feels}°C, ${w.weather}${w.rain?" + rain":""}`:`${esc(w.weather)} (expected)`}</span></div>
-    <div class="chips wrap" style="padding-top:0">${OCCASIONS.map(o=>`<button class="chip" data-act="t-dayocc" data-d="${day.date}" data-v="${esc(o)}" aria-pressed="${day.occasions.includes(o)}">${esc(o)}</button>`).join("")}</div>`;
-    (t.outfits[day.date]||[]).forEach((o,i)=>{
+    const w=tripDayWeather(t,day);
+    const where=day.travel?`${placeName(t,day.travel.from)} → ${placeName(t,day.travel.to)}`:placeName(t,day.stop);
+    h+=`<article class="card"><div class="dayhead"><h3>${esc(new Date(dayMs(day.date)).toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"}))}, ${esc(where)}</h3>
+    <span class="note">${w.f?`${w.f.feels}°C, ${w.weather}${w.rain?" + rain":""}${w.src==="last year"?" (last year)":""}`:`${esc(w.weather)} (expected)`}</span></div>
+    <div class="chips wrap" style="padding-top:0">${OCCASIONS.map(o=>`<button class="chip" data-act="t-dayocc" data-d="${day.date}" data-v="${esc(o)}" aria-pressed="${day.occasions.includes(o)}">${esc(o)}</button>`).join("")}</div>
+    <div class="chips wrap">${`<button class="chip" data-act="t-travel" data-d="${day.date}" aria-pressed="${!!day.travel}">Travel day</button>`}${`<button class="chip" data-act="t-laundry" data-d="${day.date}" aria-pressed="${!!day.laundry}">Laundry here</button>`}</div>`;
+    if(day.travel)h+=`<div class="tools" style="margin-top:8px"><label class="field" style="margin:0;flex:1"><span>From</span><select class="datein" data-tsel="from" data-d="${day.date}">${places.map(([v,l])=>`<option value="${v}" ${String(day.travel.from)===v?"selected":""}>${esc(l)}</option>`).join("")}</select></label>
+      <label class="field" style="margin:0;flex:1"><span>To</span><select class="datein" data-tsel="to" data-d="${day.date}">${places.map(([v,l])=>`<option value="${v}" ${String(day.travel.to)===v?"selected":""}>${esc(l)}</option>`).join("")}</select></label></div>`;
+    (t.built?(t.outfits[day.date]||[]):[]).forEach((o,i)=>{
       h+=`<div class="tripfit"><p class="label">${esc(o.occasion)}</p>${o.itemIds.length?collage(o.itemIds,true):""}<p class="why">${esc(o.why)}</p>
       ${o.tips&&o.tips.length?`<ul class="tips">${o.tips.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}
       <div class="row">${o.itemIds.length?`<button class="btn ghost" data-act="t-swap" data-d="${day.date}" data-i="${i}">Swap</button>`:""}${day.date===today()&&o.itemIds.length?`<button class="btn" data-act="t-wear" data-d="${day.date}" data-i="${i}">Wear today</button>`:""}</div></div>`;
@@ -1452,17 +1639,33 @@ function renderTrip(t){
   }
   const pl=packList(t);
   if(pl.length){
-    const packed=pl.filter(x=>t.packed&&t.packed[x.it.id]).length;
-    h+=`<h2>Packing list (${packed} of ${pl.length} packed)</h2>`;
+    const extras=packExtras(t),list=getChecklist();
+    const total=pl.length+extras.length+list.length;
+    const done=pl.filter(x=>t.packed&&t.packed[x.it.id]).length+extras.filter(x=>t.checks&&t.checks[x.key]).length+list.filter(x=>t.checks&&t.checks["list:"+x]).length;
+    h+=`<h2>Packing list (${done} of ${total})</h2>`;
     let cat="";
     for(const {it,n} of pl){
       if(it.category!==cat){cat=it.category;h+=`<p class="packcat">${esc(cat)}</p>`}
       const on=t.packed&&t.packed[it.id];
-      h+=`<button class="packrow${on?" on":""}" data-act="t-pack" data-id="${it.id}" aria-pressed="${!!on}"><span class="box">${on?"✓":""}</span><img src="${it.photo}" alt=""><span class="nm">${esc(it.name)}${it.qty>1?` <span class="qty">×${it.qty}</span>`:""}<small>${n} ${n===1?"outfit":"outfits"}${!available(it)?`, currently ${esc(it.status.toLowerCase())}`:""}</small></span></button>`;
+      const travelOnly=t.days.every(d=>!(t.outfits[d.date]||[]).some(o=>o.itemIds.includes(it.id)&&o.occasion!=="Travel"));
+      h+=`<button class="packrow${on?" on":""}" data-act="t-pack" data-id="${it.id}" aria-pressed="${!!on}"><span class="box">${on?"✓":""}</span><img src="${it.photo}" alt=""><span class="nm">${esc(it.name)}${it.qty>1?` <span class="qty">×${it.qty}</span>`:""}<small>${n} ${n===1?"outfit":"outfits"}${travelOnly?", wear it while travelling":""}${!available(it)?`, currently ${esc((it.status||"").toLowerCase())}`:""}</small></span></button>`;
     }
+    h+=`<p class="packcat">Basics</p>`;
+    extras.forEach(x=>{const on=t.checks&&t.checks[x.key];h+=`<button class="packrow${on?" on":""}" data-act="t-check" data-v="${esc(x.key)}" aria-pressed="${!!on}"><span class="box">${on?"✓":""}</span>${x.item?`<img src="${x.item.photo}" alt="">`:""}<span class="nm">${esc(x.label)}<small>${esc(x.hint)}</small></span></button>`});
+    h+=`<p class="packcat">Your checklist <button class="linkbtn" data-act="t-editlist">${ui.editList?"Done":"Edit"}</button></p>`;
+    list.forEach(x=>{const on=t.checks&&t.checks["list:"+x];
+      h+=ui.editList?`<div class="packrow static"><span class="nm">${esc(x)}</span><button class="btn quiet" data-act="t-rmcheck" data-v="${esc(x)}">Remove</button></div>`
+        :`<button class="packrow${on?" on":""}" data-act="t-check" data-v="${esc("list:"+x)}" aria-pressed="${!!on}"><span class="box">${on?"✓":""}</span><span class="nm">${esc(x)}</span></button>`});
+    if(ui.editList)h+=`<div class="tools"><input type="search" id="t-newcheck" placeholder="Add an item, for example Adapter" aria-label="New checklist item"><button class="btn ghost" data-act="t-addcheck">Add</button></div>`;
+    h+=`<div class="row" style="margin-top:24px"><button class="btn ghost" data-act="t-home">Back home: send clothes to the laundry</button></div>`;
   }
-  h+=`<div class="row" style="margin-top:28px"><button class="btn quiet danger" data-act="t-del">Delete trip</button></div>`;
+  h+=`<div class="row" style="margin-top:20px"><button class="btn quiet danger" data-act="t-del">Delete trip</button></div>`;
   return h;
+}
+async function tripBackHome(t){
+  let n=0;
+  for(const {it} of packList(t)){if(isFinite(wearLimit(it))&&available(it)){await Store.put("items",it.id,{...it,status:"In laundry"});n++}}
+  t.done=true;await Store.put("trips",t.id,t);render();toast(n?`${n} ${n===1?"piece":"pieces"} moved to the laundry`:"Nothing needed washing");
 }
 
 /* ================= stats ================= */
@@ -1519,7 +1722,7 @@ function findGaps(all){
 /* ================= bulk edit ================= */
 function openBulk(){
   const ids=[...ui.sel].filter(id=>S.items.has(id));if(!ids.length)return;
-  ui.bulk={ids,sets:{formality:{},season:{},material:{}},status:"",warmth:null,brand:""};
+  ui.bulk={ids,sets:{formality:{},season:{},material:{}},status:"",warmth:null,brand:"",wears:null,washed:false};
   renderBulk();if(!$("#dlg").open)$("#dlg").showModal();$("#dlgBody").scrollTop=0;
 }
 function triChips(field,opts){
@@ -1541,7 +1744,8 @@ function renderBulk(){
   <div class="field"><span>Only wear in</span><div class="chips wrap">${triChips("season",SEASONS)}</div></div>
   <div class="field"><span>Material</span><div class="chips wrap">${triChips("material",MATERIALS)}</div></div>
   <div class="field"><span>Warmth (leave unselected to keep each piece's own)</span><div class="chips wrap">${WARMTH.map((v,i)=>`<button type="button" class="chip" data-bw="${i}" aria-pressed="${b.warmth===i}">${v}</button>`).join("")}</div></div>
-  <div class="field"><span>Status</span><div class="chips wrap">${["In closet","In laundry","At tailor"].map(v=>`<button type="button" class="chip" data-bs="${v}" aria-pressed="${b.status===v}">${v}</button>`).join("")}</div></div>
+  <div class="field"><span>Status</span><div class="chips wrap">${["In closet","In laundry","At tailor"].map(v=>`<button type="button" class="chip" data-bs="${v}" aria-pressed="${b.status===v}">${v}</button>`).join("")}<button type="button" class="chip" data-bwash="1" aria-pressed="${b.washed}">Mark as washed</button></div></div>
+  <div class="field"><span>Wears before washing (leave unselected to keep each piece's own)</span><div class="chips wrap">${[["d","Default"],["1","1"],["2","2"],["3","3"],["4","4"],["5","5"],["-1","No limit"]].map(([v,l])=>`<button type="button" class="chip" data-bwp="${v}" aria-pressed="${b.wears===v}">${l}</button>`).join("")}</div></div>
   <label class="field"><span>Brand (leave empty to keep each piece's own)</span><input type="text" id="b-brand" value="${esc(b.brand)}" maxlength="40" style="width:100%;margin-top:6px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);min-height:44px"></label>
   <div class="row"><button class="btn" data-bulk="save">Apply to ${its.length} ${its.length===1?"piece":"pieces"}</button><button class="btn quiet" data-bulk="close">Cancel</button></div>`;
 }
@@ -1557,7 +1761,9 @@ async function saveBulk(){
       x[f]=cur;
     }
     if(b.warmth!=null&&NEEDS_WARMTH.has(x.category))x.warmth=b.warmth;
-    if(b.status)x.status=b.status;
+    if(b.status){if(x.status==="In laundry"&&b.status==="In closet")x.washedAt=today();x.status=b.status}
+    if(b.washed){x.washedAt=today();if(x.status==="In laundry")x.status="In closet"}
+    if(b.wears!=null)x.wearsPerWash=b.wears==="d"?"":+b.wears;
     if(b.brand)x.brand=b.brand;
     await Store.put("items",id,x);n++;
   }
@@ -1565,7 +1771,8 @@ async function saveBulk(){
 }
 function bulkClick(e){
   const b=ui.bulk;
-  const t=e.target.closest("[data-bt]"),w=e.target.closest("[data-bw]"),s=e.target.closest("[data-bs]"),a=e.target.closest("[data-bulk]");
+  const t=e.target.closest("[data-bt]"),w=e.target.closest("[data-bw]"),s=e.target.closest("[data-bs]"),a=e.target.closest("[data-bulk]"),bwp=e.target.closest("[data-bwp]"),bwash=e.target.closest("[data-bwash]");
+  if(bwp||bwash){b.brand=($("#b-brand")?.value||"");if(bwp)b.wears=b.wears===bwp.dataset.bwp?null:bwp.dataset.bwp;if(bwash)b.washed=!b.washed;const y=$("#dlgBody").scrollTop;renderBulk();$("#dlgBody").scrollTop=y;return}
   const keepBrand=()=>{b.brand=($("#b-brand")?.value||"")};
   if(t){const f=t.dataset.bt,v=t.dataset.v;const st=t.getAttribute("aria-pressed");b.sets[f][v]=st!=="true";keepBrand();const y=$("#dlgBody").scrollTop;renderBulk();$("#dlgBody").scrollTop=y;return}
   if(w){const i=+w.dataset.bw;b.warmth=b.warmth===i?null:i;keepBrand();const y=$("#dlgBody").scrollTop;renderBulk();$("#dlgBody").scrollTop=y;return}
@@ -1597,26 +1804,39 @@ document.addEventListener("click",async e=>{
     case "p-wear":{const p=S.plans.get(v);if(p){const ex=findOutfit(p.itemIds);await wearToday(p.itemIds,ex&&ex.id)}render();break}
     case "r-plan":{const r=resultAt(el.dataset.ref);const o=r&&r.list[r.i];if(o)await planOutfit(o.itemIds,o.title,o.why);break}
     case "o-plan":{const o=S.outfits.get(id);if(o)await planOutfit(o.itemIds,o.title,o.why);break}
-    case "t-new":ui.newTrip={q:"",results:[],place:null,start:dateForOffset(7),end:dateForOffset(10),occ:["Holiday"],travel:true,fallback:"Mild",err:""};render();scrollTo(0,0);break;
-    case "t-back":ui.newTrip=null;ui.tripId=null;render();scrollTo(0,0);break;
+    case "t-new":ui.newTrip=newTripState();ui.editList=false;render();scrollTo(0,0);break;
+    case "t-back":ui.newTrip=null;ui.tripId=null;ui.editList=false;render();scrollTo(0,0);break;
     case "t-search":searchPlace();break;
-    case "t-place":ui.newTrip.place=ui.newTrip.results[+v];ui.newTrip.results=[];render();break;
+    case "t-place":ui.newTrip.pick=ui.newTrip.results[+v];ui.newTrip.results=[];render();break;
+    case "t-addstop":addStop();break;
+    case "t-rmstop":ui.newTrip.stops.splice(+v,1);render();break;
     case "t-occ":{const a=ui.newTrip.occ;ui.newTrip.occ=a.includes(v)?a.filter(x=>x!==v):[...a,v];render();break}
-    case "t-fb":{if(ui.newTrip)ui.newTrip.fallback=v;else{const t=S.trips.get(ui.tripId);if(t){t.fallback=v;if(!t.fc)buildTrip(t);await Store.put("trips",t.id,t)}}render();break}
+    case "t-fb":{ui.newTrip.fallback=v;render();break}
     case "t-create":createTrip();break;
-    case "t-open":ui.tripId=id;render();scrollTo(0,0);refreshTripForecast(S.trips.get(id),false);break;
+    case "t-open":{const t=S.trips.get(id);ui.tripId=id;ui.editList=false;render();scrollTo(0,0);refreshTripWeather(t,false);break}
+    case "t-carry":{const t=S.trips.get(ui.tripId);if(t){t.carryOn=!t.carryOn;if(t.built)buildTrip(t);await Store.put("trips",t.id,t);render()}break}
     case "t-dayocc":{const t=S.trips.get(ui.tripId);if(!t)break;const day=t.days.find(d=>d.date===el.dataset.d);if(!day)break;
       day.occasions=day.occasions.includes(v)?day.occasions.filter(x=>x!==v):[...day.occasions,v];
-      buildTrip(t,day.date);await Store.put("trips",t.id,t);render();break}
+      if(t.built)buildTrip(t,day.date);await Store.put("trips",t.id,t);render();break}
+    case "t-travel":{const t=S.trips.get(ui.tripId);if(!t)break;const day=t.days.find(d=>d.date===el.dataset.d);if(!day)break;
+      if(day.travel){day.travel=null;day.occasions=day.occasions.filter(o=>o!=="Travel");if(!day.occasions.length)day.occasions=["Casual"]}
+      else{const i=t.days.indexOf(day);const prev=i>0?(t.days[i-1].travel?t.days[i-1].travel.to:t.days[i-1].stop):"home";day.travel={from:prev,to:day.stop};if(!day.occasions.includes("Travel"))day.occasions=["Travel",...day.occasions]}
+      if(t.built)buildTrip(t,day.date);await Store.put("trips",t.id,t);render();break}
+    case "t-laundry":{const t=S.trips.get(ui.tripId);if(!t)break;const day=t.days.find(d=>d.date===el.dataset.d);if(!day)break;day.laundry=!day.laundry;if(t.built)buildTrip(t);await Store.put("trips",t.id,t);render();break}
     case "t-build":{const t=S.trips.get(ui.tripId);if(t){buildTrip(t);await Store.put("trips",t.id,t);render();toast("Outfits built for every day")}break}
     case "t-swap":{const t=S.trips.get(ui.tripId);if(t){swapTripOutfit(t,el.dataset.d,+el.dataset.i);await Store.put("trips",t.id,t);render()}break}
     case "t-pack":{const t=S.trips.get(ui.tripId);if(t){t.packed=t.packed||{};t.packed[id]=!t.packed[id];await Store.put("trips",t.id,t);render()}break}
-    case "t-refresh":refreshTripForecast(S.trips.get(ui.tripId),true);break;
+    case "t-check":{const t=S.trips.get(ui.tripId);if(t){t.checks=t.checks||{};t.checks[v]=!t.checks[v];await Store.put("trips",t.id,t);render()}break}
+    case "t-editlist":ui.editList=!ui.editList;render();break;
+    case "t-addcheck":{const inp=$("#t-newcheck");const x=inp&&inp.value.trim();if(!x)break;const list=[...getChecklist()];if(!list.includes(x))list.push(x);await Store.put("meta","checklist",{items:list});render();break}
+    case "t-rmcheck":{await Store.put("meta","checklist",{items:getChecklist().filter(x=>x!==v)});render();break}
+    case "t-home":{const t=S.trips.get(ui.tripId);if(t)await tripBackHome(t);break}
+    case "t-refresh":{const t=S.trips.get(ui.tripId);toast("Updating the weather…");await refreshTripWeather(t,true);break}
     case "t-del":{if(el.dataset.armed){await Store.remove("trips",ui.tripId);ui.tripId=null;render();toast("Trip deleted")}else{el.dataset.armed="1";el.textContent="Tap again to delete this trip"}break}
     case "t-wear":{const t=S.trips.get(ui.tripId);const o=t&&t.outfits[el.dataset.d]&&t.outfits[el.dataset.d][+el.dataset.i];if(o){const oid=await saveOutfit(o.itemIds,o.occasion+" outfit",o.why);await wearToday(o.itemIds,oid)}render();break}
     case "goto-filter":ui.tab="closet";ui.filter=v;render();scrollTo(0,0);break;
     case "s-laundry":{const ids=[...ui.sel];const allOff=ids.every(i=>!available(S.items.get(i)||{}));
-      for(const i of ids){const it=S.items.get(i);if(it)await Store.put("items",i,{...it,status:allOff?"In closet":"In laundry"})}
+      for(const i of ids){const it=S.items.get(i);if(it)await Store.put("items",i,{...it,status:allOff?"In closet":"In laundry",...(allOff&&it.status==="In laundry"?{washedAt:today()}:{})})}
       toast(allOff?"Back in your closet":"Marked as in the laundry");ui.sel.clear();ui.selecting=false;render();break}
     case "goto":ui.tab=v;render();break;
     case "mode":ui.mode=v;render();if(v==="quick")loadForecast(false);break;
@@ -1649,14 +1869,16 @@ document.addEventListener("click",async e=>{
 });
 document.addEventListener("input",e=>{
   if(e.target.id==="q"){ui.q=e.target.value;ui.focusQ=true;render()}
-  if(ui.newTrip){if(e.target.id==="t-q")ui.newTrip.q=e.target.value;if(e.target.id==="t-start")ui.newTrip.start=e.target.value;if(e.target.id==="t-end")ui.newTrip.end=e.target.value}
+  if(ui.newTrip){const t=ui.newTrip,id=e.target.id;if(id==="t-q")t.q=e.target.value;if(id==="t-from")t.from=e.target.value;if(id==="t-to")t.to=e.target.value;if(id==="t-name")t.name=e.target.value}
 });
-document.addEventListener("keydown",e=>{if(e.target.id==="t-q"&&e.key==="Enter"){e.preventDefault();searchPlace()}});
+document.addEventListener("keydown",e=>{if(e.target.id==="t-q"&&e.key==="Enter"){e.preventDefault();searchPlace()}if(e.target.id==="t-newcheck"&&e.key==="Enter"){e.preventDefault();const b=$('[data-act="t-addcheck"]');b&&b.click()}});
 document.addEventListener("focusout",e=>{if(e.target.id==="q"&&!ui.rendering)ui.focusQ=false});
 document.addEventListener("change",e=>{
   if(e.target.id==="sort"){ui.sort=e.target.value;render()}
-  if(e.target.id==="t-travel"&&ui.newTrip)ui.newTrip.travel=e.target.checked;
-  if(ui.newTrip&&(e.target.id==="t-start"||e.target.id==="t-end")){ui.newTrip[e.target.id==="t-start"?"start":"end"]=e.target.value}
+  if(ui.newTrip){const t=ui.newTrip,id=e.target.id;if(id==="t-home")t.fromHome=e.target.checked;if(id==="t-carry")t.carryOn=e.target.checked;if(id==="t-from")t.from=e.target.value;if(id==="t-to")t.to=e.target.value}
+  if(e.target.dataset&&e.target.dataset.tsel){(async()=>{const t=S.trips.get(ui.tripId);if(!t)return;const day=t.days.find(d=>d.date===e.target.dataset.d);if(!day||!day.travel)return;
+    const val=e.target.value==="home"?"home":+e.target.value;day.travel[e.target.dataset.tsel]=val;if(day.travel.to!=="home")day.stop=day.travel.to;
+    if(t.built)buildTrip(t,day.date);await Store.put("trips",t.id,t);render()})()}
   if(e.target.matches('[data-act="neglect"]'))ui.neglect=e.target.checked;
   if(e.target.id==="file"){const files=[...e.target.files];e.target.value="";addFiles(files)}
   if(e.target.id==="photoIn"){const f=e.target.files[0];e.target.value="";if(f&&ui.draft){resizeImage(f).then(p=>{ui.draft.photo=p;rerenderSheet();toast("Photo changed. Save to keep it.")}).catch(()=>toast("That photo couldn't be read."))}}
