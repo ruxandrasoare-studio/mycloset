@@ -241,7 +241,7 @@ main{padding-top:26px}
 /* ================= constants ================= */
 const CATS=["Top","Bottom","Dress","Outerwear","Shoes","Legwear","Underlayer","Swimwear","Sleepwear","Bag","Accessory"];
 const TYPES={
-  Top:["T-shirt","Tank / cami","Shirt / blouse","Knit / sweater","Sweater vest","Bodysuit","Sports top","Other"],
+  Top:["T-shirt / top","Tank / cami","Shirt / blouse","Knit / sweater","Sweater vest","Bodysuit","Sports top","Other"],
   Bottom:["Trousers","Jeans","Skirt","Shorts","Leggings","Other"],
   Dress:["Dress","Jumpsuit"],
   Outerwear:["Cardigan","Blazer","Gilet","Jacket","Trench","Coat","Puffer"],
@@ -363,6 +363,9 @@ const Store={
   async remove(kind,id){await DB.tx(kind,s=>s.delete(id)).catch(()=>{});S[kind].delete(id)}
 };
 async function migrate(){
+  for(const it of S.items.values()){
+    if(it.type==="T-shirt"){await Store.put("items",it.id,{...it,type:"T-shirt / top"})}
+  }
   for(const t of S.trips.values()){
     if(t.stops)continue;
     const stop={name:t.name,label:t.place||t.name,lat:t.lat,lon:t.lon,from:t.start,to:t.end,fc:t.fc?{...t.fc,kind:"forecast"}:null};
@@ -385,6 +388,7 @@ async function migrate(){
       n.season=[];
     }
     for(const k of ["material","pattern","closure"])if(n[k]!=null&&!Array.isArray(n[k]))n[k]=n[k]?[n[k]]:[];
+    if(n.type==="T-shirt")n.type="T-shirt / top";
     if("color2" in n){n.colors2=arr(n.colors2).length?n.colors2:(n.color2?[n.color2]:[]);delete n.color2}
     n.v=3;
     await Store.put("items",n.id,n);
@@ -464,7 +468,7 @@ function parseDesc(text){
     [/\bcardigan\b/,["Outerwear","Cardigan"]],[/\bblazer\b/,["Outerwear","Blazer"]],[/\btrench\b/,["Outerwear","Trench"]],[/\bpuffer|down jacket\b/,["Outerwear","Puffer"]],
     [/\bgilet\b/,["Outerwear","Gilet"]],[/\bcoat\b/,["Outerwear","Coat"]],[/\bjacket\b/,["Outerwear","Jacket"]],
     [/\bsweater vest|knit vest|tank top vest\b/,["Top","Sweater vest"]],[/\b(sweater|jumper|pullover)\b/,["Top","Knit / sweater"]],
-    [/\bbodysuit\b/,["Top","Bodysuit"]],[/\bsports bra|sport top\b/,["Top","Sports top"]],[/\b(t-shirt|tee|tshirt)\b/,["Top","T-shirt"]],
+    [/\bbodysuit\b/,["Top","Bodysuit"]],[/\bsports bra|sport top\b/,["Top","Sports top"]],[/\b(t-shirt|tee|tshirt|top)\b/,["Top","T-shirt / top"]],
     [/\b(tank|cami|camisole)\b/,["Top","Tank / cami"]],[/\b(shirt|blouse)\b/,["Top","Shirt / blouse"]],
     [/\b(sneakers|trainers)\b/,["Shoes","Sneakers"]],[/\bboots?\b/,["Shoes","Boots"]],[/\bloafers?\b/,["Shoes","Loafers"]],[/\b(heels|pumps|stilettos?)\b/,["Shoes","Heels"]],
     [/\b(sandals?|slides)\b/,["Shoes","Sandals"]],[/\b(flats|ballet|ballerinas?)\b/,["Shoes","Flats"]],[/\btights\b/,["Legwear","Tights"]],[/\bsocks\b/,["Legwear","Socks"]],
@@ -532,9 +536,26 @@ function fitsWeather(it){
   if(it.category==="Outerwear"&&ui.weather==="Hot")return false;
   return true;
 }
+function colourOK(pieces){
+  const fams=new Set();
+  for(const i of pieces)for(const c of [i.color,...arr(i.colors2)]){
+    if(!c||NEUTRAL.has(c)||NEAR.has(c))continue;
+    fams.add(FAMILY[c]||c);
+  }
+  if(fams.size>=3)return false;
+  if(fams.size===2){
+    // two accents are only fine if they're a known pairing
+    const cs=[...new Set(pieces.flatMap(i=>[i.color,...arr(i.colors2)]).filter(c=>c&&!NEUTRAL.has(c)&&!NEAR.has(c)))];
+    for(let a=0;a<cs.length;a++)for(let b=a+1;b<cs.length;b++)if(PAIR_MAP.has(cs[a]+"|"+cs[b]))return true;
+    return false;
+  }
+  return true;
+}
 function canUnderDress(u,d){
   if(u.noLayer||d.noLayer||!u.sleeves||!d.sleeves||d.sleeves==="Strapless")return false;
-  if(!["T-shirt","Tank / cami","Shirt / blouse","Knit / sweater","Bodysuit","Other",""].includes(u.type||""))return false;
+  if(!["T-shirt / top","Tank / cami","Shirt / blouse","Bodysuit","Other",""].includes(u.type||""))return false;
+  if(!colourOK([u,d]))return false;
+  if(W(u)+W(d)>4)return false;
   if(d.fit==="Tight"){if(d.stretch!=="Stretchy"||!["Tight","Fitted"].includes(u.fit)||W(u)>1)return false}
   else if(d.fit==="Oversized"||d.fit==="Relaxed"){if(u.fit==="Oversized"||W(u)>2)return false}
   else if(!["Tight","Fitted"].includes(u.fit)||W(u)>1)return false;
@@ -544,15 +565,17 @@ function canUnderDress(u,d){
 }
 function canTopUnderTop(u,o){
   if(u.id===o.id||u.noLayer||o.noLayer||!u.sleeves||!o.sleeves)return false;
-  if(!["Knit / sweater","Sweater vest"].includes(o.type))return false;
-  if(o.fit==="Tight"||["Knit / sweater","Sweater vest"].includes(u.type))return false;
+  // Only a sleeveless sweater vest takes a top underneath. Knits and jumpers are worn on their own; use a cardigan or blazer (Outerwear) to layer.
+  if(o.type!=="Sweater vest"||SLEEVE_RANK[o.sleeves]>2)return false;
+  if(["Knit / sweater","Sweater vest","Tank / cami"].includes(u.type))return false;
+  if(o.fit==="Tight")return false;
   const snug=["Tight","Fitted"].includes(u.fit)||((o.fit==="Relaxed"||o.fit==="Oversized")&&u.fit!=="Oversized");
   if(!snug)return false;
-  if(W(u)>(u.type==="Shirt / blouse"?2:1))return false;
+  if(W(u)>2||W(u)+W(o)>3)return false;                 // not too warm together
+  if(!colourOK([u,o]))return false;                     // the two must actually match
   const sleeveShows=SLEEVE_RANK[u.sleeves]>SLEEVE_RANK[o.sleeves];
   const neckShows=u.neckline&&o.neckline&&NECK_RANK[u.neckline]>NECK_RANK[o.neckline];
-  const hemShows=o.topLength==="Cropped"&&u.topLength&&u.topLength!=="Cropped";
-  return sleeveShows||neckShows||hemShows;
+  return sleeveShows||neckShows;
 }
 function layerReason(u,o){
   if(SLEEVE_RANK[u.sleeves]>SLEEVE_RANK[o.sleeves])return `The ${u.name}'s ${u.sleeves.toLowerCase()} ${u.sleeves==="Long"||u.sleeves==="Short"?"sleeves show":"show"} under the ${o.name}, so the layer looks deliberate.`;
@@ -622,7 +645,7 @@ function suggest(){
         const opts=tops.filter(u=>canUnderDress(u,dress));
         const force=anchor&&anchor.category==="Top"&&opts.includes(anchor);
         if(opts.length&&(force||Math.random()<.35)){const u=force?anchor:choose(opts);o.push(u);layered=true;notes.push(layerReason(u,dress))}
-      }else if(top){
+      }else if(top&&ui.occasion!=="Sport"){
         if(forcedOver){o.push(forcedOver);layered=true;notes.push(layerReason(top,forcedOver))}
         else{
           const overs=tops.filter(ov=>canTopUnderTop(top,ov));
@@ -640,18 +663,20 @@ function suggest(){
     }
     // warmth and coverage: first layers and jackets
     const isCold=ui.weather==="Cold",isCool=ui.weather==="Cool",chilly=isCool||isCold;
-    const coverWeather=ui.weather==="Mild"||chilly;
+    const sporty=ui.occasion==="Sport";
+    const coverWeather=(ui.weather==="Mild"||chilly)&&!sporty;
     let tw=outfitWarmth(o);
     const forcedOuter=anchor&&anchor.category==="Outerwear"?anchor:null;
     const isOuter=i=>i.category==="Outerwear"&&!MID.has(i.type);
     const hasMid=()=>o.some(i=>i.category==="Outerwear"&&MID.has(i.type)),hasOuter=()=>o.some(isOuter);
+    const sportOK=m=>!sporty||(m.formality||[]).includes("Sport");
     const addOuter=required=>{
-      let cand=outers.filter(m=>outfitWarmth([...o,m])<=maxW);if(!cand.length&&required)cand=outers;
+      let cand=outers.filter(m=>sportOK(m)&&outfitWarmth([...o,m])<=maxW);if(!cand.length&&required&&!sporty)cand=outers;
       if(isCold&&cand.some(m=>W(m)>=2))cand=cand.filter(m=>W(m)>=2);
       if(ui.rain&&cand.some(m=>m.rainproof==="Yes"))cand=cand.filter(m=>m.rainproof==="Yes");
       if(cand.length){o.push(choose(cand));tw=outfitWarmth(o)}
     };
-    const addMid=required=>{let cand=mids.filter(m=>outfitWarmth([...o,m])<=maxW);if(!cand.length&&required)cand=mids;if(cand.length){o.push(choose(cand));tw=outfitWarmth(o)}};
+    const addMid=required=>{let cand=mids.filter(m=>sportOK(m)&&outfitWarmth([...o,m])<=maxW);if(!cand.length&&required&&!sporty)cand=mids;if(cand.length){o.push(choose(cand));tw=outfitWarmth(o)}};
     if(forcedOuter){o.push(forcedOuter);tw=outfitWarmth(o)}
     // bare arms = straps, strapless, sleeveless or short sleeves as the most covered piece
     const armRank=()=>{const rs=o.filter(i=>i.category==="Top"||i.category==="Dress").map(i=>i.sleeves?SLEEVE_RANK[i.sleeves]:99);return rs.length?Math.max(...rs):99};
@@ -675,8 +700,10 @@ function suggest(){
       if(ui.weather==="Mild"&&!(firstLayer()||hasOuter()))continue;
       if(chilly&&!firstLayer()&&(mids.length||dress))continue;
     }
-    if(chilly&&outers.length&&!hasOuter())continue;
-    if(chilly&&!outers.length&&!tips.includes("jacket"))tips.push("Add a jacket or coat on top: none are tagged for this weather yet.");
+    const sportOuters=sporty?outers.filter(m=>(m.formality||[]).includes("Sport")):outers;
+    if(chilly&&sportOuters.length&&!hasOuter()&&!sporty)continue;
+    if(chilly&&sporty&&sportOuters.length&&!hasOuter()){const c=sportOuters.filter(m=>outfitWarmth([...o,m])<=maxW);if(c.length){o.push(choose(c));tw=outfitWarmth(o)}}
+    if(chilly&&!sportOuters.length&&!sporty&&!tips.includes("jacket"))tips.push("Add a jacket or coat on top: none are tagged for this weather yet.");
     // tights with dresses and skirts when it's cool
     const legsOut=dress?dress.dressLength!=="Maxi":bottom&&(bottom.type==="Skirt"||bottom.type==="Shorts")&&bottom.bottomLength!=="Maxi";
     if(legsOut&&tights.length&&!(anchor&&anchor.category==="Legwear")){
@@ -688,7 +715,7 @@ function suggest(){
     }
     if(anchor&&anchor.category==="Legwear")o.push(anchor);
     tw=outfitWarmth(o);
-    if(tw<minW||tw>maxW)continue;
+    if((tw<minW&&!sporty)||tw>maxW)continue;
     // shoes, bag, accessory
     const wearsTights=o.some(i=>i.category==="Legwear"&&i.type==="Tights");
     let shoeOpts=wearsTights?shoes.filter(s=>s.toe!=="Open"):shoes;
@@ -1310,7 +1337,7 @@ async function sheetSave(){
   if(clean.colors2)clean.colors2=clean.colors2.filter(c=>c!==clean.color);
   if(!NEEDS_WARMTH.has(cat))delete clean.warmth;
   if(cat==="Underlayer")clean.warmth=0;
-  const auto=`${d.color} ${(d.type&&d.type!=="Other"&&d.type!=="Dress"?d.type:cat)}`.toLowerCase().replace(" / "," ");
+  const auto=`${d.color} ${(d.type&&d.type!=="Other"&&d.type!=="Dress"?d.type.replace("T-shirt / top","top"):cat)}`.toLowerCase().replace(" / "," ");
   const typed=d.nameInput;
   clean.name=typed&&typed!==auto?typed:auto;
   clean.autoName=auto;clean.needsTags=false;clean.needsReview=false;
