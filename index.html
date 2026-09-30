@@ -11,13 +11,13 @@
 <meta name="closet-app" content="5">
 <meta name="apple-mobile-web-app-title" content="My Closet">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#F3F2EC" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#141A16" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#DCE7DD" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#223029" media="(prefers-color-scheme: dark)">
 <style>
 :root{
-  --bg:#F3F2EC; --surface:#FFFFFF; --ink:#22302A; --muted:#5E6A61; --line:#DCDDD2;
-  --accent:#3E6B52; --accent-ink:#FFFFFF; --tag:#F1E2A8; --tag-ink:#5A4708; --sheet:#F8F7F2;
-  --err-bg:#F6DDD6; --err-ink:#7A2A1C;
+  --bg:#F3F2EC; --surface:#FCFBF6; --ink:#22302A; --muted:#5E6A61; --line:#DAD9CD;
+  --accent:#3E6B52; --accent-ink:#FFFFFF; --tag:#F1E2A8; --tag-ink:#5A4708; --sheet:#F7F5EC;
+  --err-bg:#F6DDD6; --err-ink:#7A2A1C; --band:#DCE7DD; --bar:#3E6B52; --bar-ink:#E9E3CC;
   --font:-apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   color-scheme:light;
   box-sizing:border-box;
@@ -27,15 +27,15 @@
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
     --bg:#141A16; --surface:#1D2520; --ink:#E9EDE6; --muted:#A3AEA5; --line:#2E3A33;
-    --accent:#8DBB9E; --accent-ink:#141A16; --tag:#4A3F18; --tag-ink:#F1E2A8; --sheet:#232C26;
-    --err-bg:#4A2620; --err-ink:#F6DDD6;
+    --accent:#8FB39A; --accent-ink:#141A16; --tag:#4A3F18; --tag-ink:#F1E2A8; --sheet:#232C26;
+    --err-bg:#4A2620; --err-ink:#F6DDD6; --band:#223029; --bar:#223029; --bar-ink:#C9D8CD;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --bg:#141A16; --surface:#1D2520; --ink:#E9EDE6; --muted:#A3AEA5; --line:#2E3A33;
-  --accent:#8DBB9E; --accent-ink:#141A16; --tag:#4A3F18; --tag-ink:#F1E2A8; --sheet:#232C26;
-  --err-bg:#4A2620; --err-ink:#F6DDD6;
+    --accent:#8FB39A; --accent-ink:#141A16; --tag:#4A3F18; --tag-ink:#F1E2A8; --sheet:#232C26;
+    --err-bg:#4A2620; --err-ink:#F6DDD6; --band:#223029; --bar:#223029; --bar-ink:#C9D8CD;
   color-scheme:dark;
 }
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -198,6 +198,24 @@ textarea{width:100%;margin-top:6px;padding:10px 12px;border:1px solid var(--line
 .stoprow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
 .stoprow span{display:flex;flex-direction:column}.stoprow small{color:var(--muted);font-size:13px}
 .stat span{font-size:13px;color:var(--muted)}
+
+body{background:linear-gradient(var(--band) 0 calc(150px + env(safe-area-inset-top,0px)),var(--bg) calc(150px + env(safe-area-inset-top,0px)))}
+main{padding-top:26px}
+.tabs{background:var(--bar);border-top:0}
+.tabs button{color:var(--bar-ink)}
+.tabs button[aria-current="page"]{color:var(--tag-ink)}
+.tabs button[aria-current="page"]::after{content:"";position:absolute;inset:6px 8px auto 8px;top:6px;bottom:auto;height:calc(100% - 12px);left:8px;right:8px;border-radius:12px;background:var(--tag);z-index:-1}
+.tabs button{isolation:isolate}
+.chip{background:var(--surface)}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.ghost{background:var(--surface)}
+.hangtag{background:var(--surface)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.banner{background:var(--tag);color:var(--tag-ink)}
+.lay{background:var(--sheet)}
+.item .ph{background:var(--surface)}
+.brand{display:flex;align-items:center;gap:12px;text-transform:lowercase;font-size:36px;letter-spacing:.01em}
+.brand .logo{width:38px;height:38px;border-radius:10px;flex:none}
 </style>
 </head>
 <body>
@@ -1081,7 +1099,7 @@ function renderCloset(){
   const dueCount=all.filter(dueForWash).length;
   const filters=["All",...(dueCount?["Due for a wash"]:[]),...(negCount?["Not worn lately"]:[]),...(neverCount?["Never worn"]:[]),...(offCount?["Unavailable"]:[]),...CATS.filter(c=>all.some(i=>i.category===c))];
   const pieces=all.reduce((n,i)=>n+(i.qty||1),0);
-  let h=`<div class="head"><div><h1>My Closet</h1><p class="sub">${pieces} ${pieces===1?"piece":"pieces"}${negCount?`, ${negCount} not worn in 3+ weeks`:""}</p></div>
+  let h=`<div class="head"><div><h1 class="brand"><img class="logo" src="data:image/png;base64,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" alt="">My Closet</h1><p class="sub">${pieces} ${pieces===1?"piece":"pieces"}${negCount?`, ${negCount} not worn in 3+ weeks`:""}</p></div>
   <div class="actions">${all.length?`<button class="btn ghost" data-act="select">${ui.selecting?"Done":"Select"}</button>`:""}<button class="btn" data-act="add">Add pieces</button></div></div>`;
   if(todo)h+=`<div class="banner"><span>${todo} ${todo===1?"piece needs":"pieces need"} tags</span><button class="btn" data-act="tagnow">Tag now</button></div>`;
   else if(review)h+=`<div class="banner"><span>${review} ${review===1?"piece is":"pieces are"} missing details the ideas use</span><button class="btn" data-act="reviewnow">Review</button></div>`;
