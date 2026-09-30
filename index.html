@@ -199,7 +199,10 @@ textarea{width:100%;margin-top:6px;padding:10px 12px;border:1px solid var(--line
 .stoprow span{display:flex;flex-direction:column}.stoprow small{color:var(--muted);font-size:13px}
 .stat span{font-size:13px;color:var(--muted)}
 
-body{background:linear-gradient(var(--band) 0 calc(150px + env(safe-area-inset-top,0px)),var(--bg) calc(150px + env(safe-area-inset-top,0px)))}
+html{background:var(--band)}
+body{background:var(--bg);min-height:100%;overflow-x:hidden}
+.band{background:var(--band);margin:-26px calc(50% - 50vw) 0;padding:26px calc(50vw - 50%) 20px}
+.band .tools{margin-top:16px}
 main{padding-top:26px}
 .tabs{background:var(--bar);border-top:0}
 .tabs button{color:var(--bar-ink)}
@@ -1101,6 +1104,9 @@ function renderCloset(){
   const pieces=all.reduce((n,i)=>n+(i.qty||1),0);
   let h=`<div class="head"><div><h1 class="brand"><img class="logo" src="data:image/png;base64,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" alt="">My Closet</h1><p class="sub">${pieces} ${pieces===1?"piece":"pieces"}${negCount?`, ${negCount} not worn in 3+ weeks`:""}</p></div>
   <div class="actions">${all.length?`<button class="btn ghost" data-act="select">${ui.selecting?"Done":"Select"}</button>`:""}<button class="btn" data-act="add">Add pieces</button></div></div>`;
+  if(all.length)h+=`<div class="tools"><input type="search" id="q" placeholder="Search name, brand, colour, material…" value="${esc(ui.q||"")}" aria-label="Search your closet">
+  <select id="sort" aria-label="Sort">${["Newest","Most worn","Least worn","Longest unworn","Name","Colour","Price"].map(s=>`<option ${s===(ui.sort||"Newest")?"selected":""}>${s}</option>`).join("")}</select></div>`;
+  h+="<!--/head-->";
   if(todo)h+=`<div class="banner"><span>${todo} ${todo===1?"piece needs":"pieces need"} tags</span><button class="btn" data-act="tagnow">Tag now</button></div>`;
   else if(review)h+=`<div class="banner"><span>${review} ${review===1?"piece is":"pieces are"} missing details the ideas use</span><button class="btn" data-act="reviewnow">Review</button></div>`;
   if(!all.length){
@@ -1109,8 +1115,6 @@ function renderCloset(){
     <p>You'll tag each one right after. Paste the shop's description if you have it and the app fills in most tags for you.</p>
     <p>Ideas get interesting at around 30 pieces.</p></div>`+renderSettings();
   }
-  h+=`<div class="tools"><input type="search" id="q" placeholder="Search name, brand, colour, material…" value="${esc(ui.q||"")}" aria-label="Search your closet">
-  <select id="sort" aria-label="Sort">${["Newest","Most worn","Least worn","Longest unworn","Name","Colour","Price"].map(s=>`<option ${s===(ui.sort||"Newest")?"selected":""}>${s}</option>`).join("")}</select></div>`;
   if(filters.length>1)h+=`<div class="chips" role="toolbar" aria-label="Filter">${filters.map(f=>chip("filter",f,ui.filter===f)).join("")}</div>`;
   if(ui.selecting)h+=`<p class="note">Tap pieces to log today's outfit, save a combination, or send them to the laundry.</p>`;
   h+=`<div class="grid">${list.map(it=>{
@@ -1134,7 +1138,7 @@ function renderSettings(){
 }
 
 function renderIdeas(){
-  let h=`<h1>Outfit ideas</h1><div class="seg" role="group" aria-label="Mode"><button data-act="mode" data-v="quick" aria-pressed="${ui.mode==="quick"}">Quick ideas</button><button data-act="mode" data-v="ask" aria-pressed="${ui.mode==="ask"}">Ask AI</button></div>`;
+  let h=`<h1>Outfit ideas</h1><div class="seg" role="group" aria-label="Mode"><button data-act="mode" data-v="quick" aria-pressed="${ui.mode==="quick"}">Quick ideas</button><button data-act="mode" data-v="ask" aria-pressed="${ui.mode==="ask"}">Ask AI</button></div><!--/head-->`;
   return h+(ui.mode==="ask"?renderAsk():renderQuick());
 }
 function planBanner(){return ui.planDate?`<div class="banner"><span>Choosing an outfit for ${esc(dayLabel(ui.planDate))}</span><button class="btn" data-act="p-cancel">Cancel</button></div>`:""}
@@ -1178,7 +1182,7 @@ function renderAsk(){
 }
 
 function renderOutfits(){
-  let h=`<h1>Outfits</h1>`+planBanner()+`<h2>Today</h2>`;
+  let h=`<h1>Outfits</h1><!--/head-->`+planBanner()+`<h2>Today</h2>`;
   const t=S.log.get(today()),pt=S.plans.get(today());
   h+=t?`<div class="card">${collage(t.itemIds)}</div>`
     :pt?`<div class="card"><h3>Planned for today</h3>${collage(pt.itemIds)}<div class="row"><button class="btn" data-act="p-wear" data-v="${today()}">Wear this</button></div></div>`
@@ -1206,7 +1210,10 @@ function render(){
   if(!ui.ready)return;
   ui.rendering=true;
   const keep=$("#askText")?$("#askText").value:"";
-  $("#app").innerHTML=ui.tab==="closet"?renderCloset():ui.tab==="ideas"?renderIdeas():ui.tab==="plan"?renderPlan():ui.tab==="stats"?renderStats():renderOutfits();
+  const page=ui.tab==="closet"?renderCloset():ui.tab==="ideas"?renderIdeas():ui.tab==="plan"?renderPlan():ui.tab==="stats"?renderStats():renderOutfits();
+  let cut=page.indexOf("<!--/head-->"),skip=12;
+  if(cut<0){const j=page.indexOf("</div>",page.indexOf("</h1>"));cut=page.indexOf("</h1>")>=0?(page.indexOf('class="head"')>=0?page.indexOf("</div></div>")+12:page.indexOf("</h1>")+5):0;skip=0}
+  $("#app").innerHTML=`<header class="band">${page.slice(0,cut)}</header>`+page.slice(cut+skip);
   if(keep&&$("#askText")&&!$("#askText").value)$("#askText").value=keep;
   if(ui.focusQ&&$("#q")){const q=$("#q");q.focus();q.setSelectionRange(q.value.length,q.value.length)}
   ui.rendering=false;
@@ -1375,7 +1382,7 @@ async function planOutfit(ids,title,why){
 function renderPlan(){
   if(ui.newTrip)return renderNewTrip();
   const trip=ui.tripId&&S.trips.get(ui.tripId);if(trip)return renderTrip(trip);
-  let h=`<h1>Plan</h1><p class="sub">Pick outfits ahead, and plan trips with a packing list.</p><h2>This week</h2>`;
+  let h=`<h1>Plan</h1><p class="sub">Pick outfits ahead, and plan trips with a packing list.</p><!--/head--><h2>This week</h2>`;
   for(let n=0;n<7;n++){
     const key=dateForOffset(n),p=S.plans.get(key),f=forecastFor(FC.data,key),logged=S.log.get(key);
     h+=`<article class="card"><div class="dayhead"><h3>${esc(dayLabel(key))}</h3><span class="note">${f?`${f.feels}°C, ${f.weather}${f.wet?" + rain":""}`:""}</span></div>`;
@@ -1424,7 +1431,7 @@ async function searchPlace(){
 function renderNewTrip(){
   const t=ui.newTrip;
   let h=`<button class="btn quiet" data-act="t-back" style="padding-left:0">← Plan</button><h1>New trip</h1>
-  <p class="sub">Add each place you'll stay, with its dates. Then you'll set what each day looks like.</p>`;
+  <p class="sub">Add each place you'll stay, with its dates. Then you'll set what each day looks like.</p><!--/head-->`;
   if(t.stops.length){
     h+=`<h2>Stops</h2>`;
     t.stops.forEach((s,i)=>h+=`<div class="stoprow"><span><b>${esc(s.name)}</b><small>${esc(fmtRange(s.from,s.to))}</small></span><button class="btn quiet" data-act="t-rmstop" data-v="${i}" aria-label="Remove ${esc(s.name)}">Remove</button></div>`);
@@ -1629,7 +1636,7 @@ function packExtras(trip){
 function renderTrip(t){
   const n=t.days.length;
   let h=`<button class="btn quiet" data-act="t-back" style="padding-left:0">← Plan</button><h1>${esc(t.name)}</h1>
-  <p class="sub">${esc(tripSummary(t))}. ${n} ${n===1?"day":"days"}.</p>
+  <p class="sub">${esc(tripSummary(t))}. ${n} ${n===1?"day":"days"}.</p><!--/head-->
   <div class="chips wrap">${chip("t-carry","Carry-on only",!!t.carryOn)}</div>`;
   const srcs=new Set(t.days.map(d=>tripDayWeather(t,d).src));
   h+=`<p class="note">${srcs.has("forecast")?"Weather from the forecast where available. ":""}${srcs.has("last year")?"Days beyond the 16-day forecast use last year's weather on the same dates. ":""}${srcs.has("expected")?`Days without data assume ${esc((t.fallback||"Mild").toLowerCase())} weather. `:""}<button class="linkbtn" data-act="t-refresh">Refresh weather</button></p>`;
@@ -1689,7 +1696,7 @@ async function tripBackHome(t){
 /* ================= stats ================= */
 function renderStats(){
   const w=wearStats();const all=items().filter(i=>!i.needsTags);
-  let h=`<h1>Stats</h1>`;
+  let h=`<h1>Stats</h1><!--/head-->`;
   if(!all.length)return h+`<p class="sub">Tag some pieces and log a few outfits, and your stats show up here.</p>`;
   const pieces=all.reduce((n,i)=>n+(i.qty||1),0);
   const cut=Date.now()-30*864e5;const worn30=new Set();
