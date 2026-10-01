@@ -229,6 +229,7 @@ main{padding-top:26px}
 .slotpick{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:6px;text-align:center;cursor:pointer;color:inherit;font:inherit}
 .slotpick img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px}
 .slotpick span{font-size:12.5px;line-height:1.2;display:flex;flex-direction:column}
+.editedtag{font-size:11px;font-weight:600;color:var(--tag-ink);background:var(--tag);padding:1px 7px;border-radius:999px;margin-left:4px}
 .slotpick small{color:var(--tag-ink);font-size:11px}
 </style>
 </head>
@@ -1094,6 +1095,8 @@ function resultAt(ref){
   if(!ref)return null;const p=ref.split(":");
   if(p[0]==="q")return {list:ui.results,i:+p[1]};
   if(p[0]==="c"){const m=ui.chat[+p[1]];return m?{list:m.outfits,i:+p[2]}:null}
+  if(p[0]==="t"){const t=S.trips.get(ui.tripId);const d=p.slice(1,-1).join(":");return t&&t.outfits[d]?{list:t.outfits[d],i:+p[p.length-1],trip:t,date:d}:null}
+  if(p[0]==="plan"){const d=p.slice(1).join(":");const pl=S.plans.get(d);return pl?{list:[pl],i:0,plan:d}:null}
   return null;
 }
 function outfitByRef(ref){const r=resultAt(ref);return r?r.list[r.i]:null}
@@ -1455,7 +1458,7 @@ function renderPlan(){
     const key=dateForOffset(n),p=S.plans.get(key),f=forecastFor(FC.data,key),logged=S.log.get(key);
     h+=`<article class="card"><div class="dayhead"><h3>${esc(dayLabel(key))}</h3><span class="note">${f?`${f.feels}°C, ${f.weather}${f.wet?" + rain":""}`:""}</span></div>`;
     if(p){
-      h+=`${collage(p.itemIds,true)}<div class="row">${n===0&&!logged?`<button class="btn" data-act="p-wear" data-v="${key}">Wear this</button>`:""}${n===0&&logged?`<span class="note">Logged</span>`:""}<button class="btn ghost" data-act="p-choose" data-v="${key}">Change</button><button class="btn quiet" data-act="p-clear" data-v="${key}">Clear</button></div>`;
+      h+=`${collage(p.itemIds,true,"plan:"+key)}<div class="row">${n===0&&!logged?`<button class="btn" data-act="p-wear" data-v="${key}">Wear this</button>`:""}${n===0&&logged?`<span class="note">Logged</span>`:""}<button class="btn ghost" data-act="p-choose" data-v="${key}">Change</button><button class="btn quiet" data-act="p-clear" data-v="${key}">Clear</button></div>`;
     }else h+=`<div class="row" style="margin-top:4px"><button class="btn ghost" data-act="p-choose" data-v="${key}">Choose outfit</button></div>`;
     h+=`</article>`;
   }
@@ -1723,9 +1726,10 @@ function renderTrip(t){
     if(day.travel)h+=`<div class="tools" style="margin-top:8px"><label class="field" style="margin:0;flex:1"><span>From</span><select class="datein" data-tsel="from" data-d="${day.date}">${places.map(([v,l])=>`<option value="${v}" ${String(day.travel.from)===v?"selected":""}>${esc(l)}</option>`).join("")}</select></label>
       <label class="field" style="margin:0;flex:1"><span>To</span><select class="datein" data-tsel="to" data-d="${day.date}">${places.map(([v,l])=>`<option value="${v}" ${String(day.travel.to)===v?"selected":""}>${esc(l)}</option>`).join("")}</select></label></div>`;
     (t.built?(t.outfits[day.date]||[]):[]).forEach((o,i)=>{
-      h+=`<div class="tripfit"><p class="label">${esc(o.occasion)}</p>${o.itemIds.length?collage(o.itemIds,true):""}<p class="why">${esc(o.why)}</p>
+      const tref="t:"+day.date+":"+i;
+      h+=`<div class="tripfit"><p class="label">${esc(o.occasion)}${o.edited?' <span class="editedtag">edited</span>':""}</p>${o.itemIds.length?collage(o.itemIds,true,tref):""}<p class="why">${esc(o.why)}</p>
       ${o.tips&&o.tips.length?`<ul class="tips">${o.tips.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}
-      <div class="row">${o.itemIds.length?`<button class="btn ghost" data-act="t-swap" data-d="${day.date}" data-i="${i}">Swap</button>`:""}${day.date===today()&&o.itemIds.length?`<button class="btn" data-act="t-wear" data-d="${day.date}" data-i="${i}">Wear today</button>`:""}</div></div>`;
+      <div class="row">${o.itemIds.length?`<button class="btn ghost" data-act="t-swap" data-d="${day.date}" data-i="${i}">Shuffle</button>`:""}${day.date===today()&&o.itemIds.length?`<button class="btn" data-act="t-wear" data-d="${day.date}" data-i="${i}">Wear today</button>`:""}</div></div>`;
     });
     if(!day.occasions.length)h+=`<p class="note">No occasions picked for this day.</p>`;
     h+=`</article>`;
@@ -1839,12 +1843,15 @@ function candidatesFor(outfit,slotId,ctx){
 function addableCategories(outfit){
   const have=new Set(outfit.itemIds.map(id=>S.items.get(id)).filter(Boolean).map(i=>i.category));
   const opts=[];
-  if(!have.has("Outerwear"))opts.push("Outerwear");
-  if(!have.has("Bag"))opts.push("Bag");
-  if(!have.has("Accessory"))opts.push("Accessory");
-  if(!have.has("Legwear"))opts.push("Legwear");
-  if(!have.has("Shoes"))opts.push("Shoes");
+  if(!have.has("Dress")){if(!have.has("Top"))opts.push("Top");if(!have.has("Bottom"))opts.push("Bottom");}
+  if(!have.has("Top")&&!have.has("Bottom")&&!have.has("Dress"))opts.push("Dress");
+  for(const c of ["Outerwear","Shoes","Legwear","Bag","Accessory","Underlayer"])if(!have.has(c))opts.push(c);
   return opts.filter(c=>items().some(i=>!i.needsTags&&available(i)&&i.category===c));
+}
+function slotCtx(ref){
+  const r=resultAt(ref);
+  if(r&&r.trip){const day=r.trip.days.find(d=>d.date===r.date);const w=day?tripDayWeather(r.trip,day):null;const o=r.list[r.i];return {occasion:o.occasion,weather:w?w.weather:ui.weather,rain:w?w.rain:false}}
+  return {occasion:ui.occasion,weather:ui.weather,rain:ui.rain};
 }
 function openSlot(ref,slotId){
   const o=outfitByRef(ref);if(!o)return;
@@ -1858,7 +1865,7 @@ function openAdd(ref){
 }
 function renderSlot(){
   const st=ui.slot,o=outfitByRef(st.ref);if(!o){$("#dlg").close();return}
-  const ctx={occasion:ui.planDate?ui.occasion:ui.occasion,weather:ui.weather,rain:ui.rain};
+  const ctx=slotCtx(st.ref);
   let h="",cands=[];
   if(st.slotId){
     const cur=S.items.get(st.slotId);
@@ -1870,7 +1877,8 @@ function renderSlot(){
     h+=`<h3>Add a piece</h3>`;
     if(st.cats&&st.cats.length>1)h+=`<div class="chips wrap">${st.cats.map(c=>`<button class="chip" data-slotcat="${c}" aria-pressed="${st.addCat===c}">${c}</button>`).join("")}</div>`;
     const fake={itemIds:o.itemIds};
-    cands=items().filter(i=>!i.needsTags&&available(i)&&i.category===st.addCat).map(i=>({i,s:(isNeglected(i,wearStats().get(i.id))?1:0)+Math.random(),warn:""})).sort((a,b)=>b.s-a.s);
+    const occ=ctx.occasion;const fitsO=i=>NO_OCCASION.has(i.category)||occ==="Any"||(i.formality||[]).includes(occ);
+    cands=items().filter(i=>!i.needsTags&&available(i)&&i.category===st.addCat&&fitsO(i)).map(i=>({i,s:(isNeglected(i,wearStats().get(i.id))?1:0)+Math.random(),warn:""})).sort((a,b)=>b.s-a.s);
   }
   if(!cands.length)h+=`<p class="note">No other ${st.addCat?esc(st.addCat.toLowerCase()):"pieces"} fit this occasion.</p>`;
   h+=`<div class="slotgrid">${cands.slice(0,40).map(c=>`<button class="slotpick" data-slotpick="${c.i.id}"><img src="${c.i.photo}" alt=""><span>${esc(c.i.name)}${c.warn?`<small>${esc(c.warn)}</small>`:""}</span></button>`).join("")}</div>
@@ -1883,8 +1891,11 @@ async function applySlot(newId){
   if(st.slotId){const k=ids.indexOf(st.slotId);if(k>=0){if(newId)ids[k]=newId;else ids.splice(k,1)}}
   else if(newId)ids.push(newId);
   ids=[...new Set(ids)];
-  r.list[r.i]={...o,itemIds:ids,why:o.why,tips:o.tips,edited:true,saved:false,title:o.title};
-  ui.slot=null;$("#dlg").close();render();
+  r.list[r.i]={...o,itemIds:ids,why:o.why,tips:o.tips,edited:true,saved:false};
+  ui.slot=null;$("#dlg").close();
+  if(r.trip){await Store.put("trips",r.trip.id,r.trip)}
+  if(r.plan){await Store.put("plans",r.plan,r.list[0])}
+  render();
 }
 
 /* ================= bulk edit ================= */
