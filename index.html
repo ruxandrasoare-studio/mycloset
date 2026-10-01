@@ -632,7 +632,11 @@ function suggest(){
     const ws=list.map(i=>neg(i)?3:1),tot=ws.reduce((a,b)=>a+b,0);let r=Math.random()*tot;
     for(let i=0;i<list.length;i++){r-=ws[i];if(r<=0)return list[i]}return list[list.length-1];
   };
-  let bases=[];dresses.forEach(d=>bases.push([d]));tops.filter(t=>t.type!=="Sweater vest"||anchor===t).forEach(t=>bottoms.forEach(b=>bases.push([t,b])));
+  // In Sport, strappy/sleeveless tops (bras, camis) are under-layers, not base tops, when a sleeved sports top exists to go over them.
+  const hasSleevedSport=ui.occasion==="Sport"&&tops.some(isSportOverTop);
+  const underOnly=t=>ui.occasion==="Sport"&&hasSleevedSport&&(isSportBra(t)||(t.type==="Tank / cami"&&t.sleeves&&SLEEVE_RANK[t.sleeves]<=2));
+  const baseTops=tops.filter(t=>(t.type!=="Sweater vest"&&!underOnly(t))||anchor===t);
+  let bases=[];dresses.forEach(d=>bases.push([d]));baseTops.forEach(t=>bottoms.forEach(b=>bases.push([t,b])));
   if(anchor&&["Top","Bottom","Dress"].includes(anchor.category)&&!["Knit / sweater","Sweater vest"].includes(anchor.type))bases=bases.filter(b=>b.includes(anchor));
   if(anchor&&["Knit / sweater","Sweater vest"].includes(anchor.type)){
     const withIt=bases.filter(b=>b.includes(anchor));
@@ -651,7 +655,11 @@ function suggest(){
     const o=[...base];const notes=[];const tips=[];let layered=false;
     const dress=base.find(i=>i.category==="Dress");
     const top=base.find(i=>i.category==="Top");const bottom=base.find(i=>i.category==="Bottom");
-    // layering
+    // layering — a sleeved sports top over a bra/tank is structural, so it is allowed in any weather
+    if(top&&ui.occasion==="Sport"&&isSportOverTop(top)&&top.sheer!=="Sheer"&&top.sheer!=="Semi-sheer"){
+      const u=sportUnderOptions(ready,top);
+      if(u.length){const pick=choose(u);if(!o.includes(pick)){o.push(pick);layered=true;notes.push(`The ${pick.name} shows under the ${top.name}.`)}}
+    }
     if(ui.weather!=="Hot"&&ui.weather!=="Warm"){
       if(dress){
         const opts=tops.filter(u=>canUnderDress(u,dress));
@@ -668,9 +676,20 @@ function suggest(){
     // sheer pieces need an underlayer
     for(const p of [...o]){
       if(p.sheer==="Sheer"||p.sheer==="Semi-sheer"){
-        const want=p.category==="Bottom"?["Bike shorts","Slip"]:p.category==="Dress"?["Slip","Bodysuit"]:["Camisole","Bralette","Bodysuit"];
-        const u=unders.filter(x=>want.includes(x.type));
-        if(u.length)o.push(choose(u));else tips.push(`The ${p.name} is sheer: wear ${p.category==="Bottom"?"shorts or a slip":p.category==="Dress"?"a slip":"a camisole or bralette"} underneath.`);
+        const isSportTop=(p.category==="Top")&&((p.formality||[]).includes("Sport")||p.type==="Sports top");
+        let want,u;
+        if(isSportTop){
+          // under a sheer sports top: a sports bra, then a tank/cami, then a cami/bralette underlayer
+          const bras=ready.filter(isSportBra).filter(x=>x.id!==p.id&&!o.includes(x));
+          const camis=ready.filter(x=>x.type==="Tank / cami"&&!x.needsTags&&available(x)&&x.id!==p.id&&!o.includes(x));
+          u=bras.length?bras:camis.length?camis:unders.filter(x=>["Camisole","Bralette","Bodysuit"].includes(x.type));
+          if(u.length){const pick=choose(u);if(!o.includes(pick))o.push(pick)}
+          else tips.push(`The ${p.name} is sheer: wear a sports bra underneath.`);
+        }else{
+          want=p.category==="Bottom"?["Bike shorts","Slip"]:p.category==="Dress"?["Slip","Bodysuit"]:["Camisole","Bralette","Bodysuit"];
+          u=unders.filter(x=>want.includes(x.type));
+          if(u.length)o.push(choose(u));else tips.push(`The ${p.name} is sheer: wear ${p.category==="Bottom"?"shorts or a slip":p.category==="Dress"?"a slip":"a camisole or bralette"} underneath.`);
+        }
       }
     }
     // warmth and coverage: first layers and jackets
@@ -750,7 +769,9 @@ function suggest(){
   for(const c of cands){
     if(used.has(c.s))continue;
     const m=c.o.filter(i=>MAIN.has(i.category)&&i.category!=="Outerwear").map(i=>i.id);
-    const clash=picked.some(p=>{const pm=p.o.filter(i=>MAIN.has(i.category)&&i.category!=="Outerwear").map(i=>i.id);const shared=m.filter(id=>pm.includes(id)).length;return anchor?shared>=m.length:shared>=Math.min(2,m.length)});
+    const mainOf=x=>x.o.filter(i=>MAIN.has(i.category)&&i.category!=="Outerwear"&&!(ui.occasion==="Sport"&&isSportBra(i))).map(i=>i.id);
+    const pmSelf=mainOf(c);
+    const clash=picked.some(p=>{const pm=mainOf(p);const shared=pmSelf.filter(id=>pm.includes(id)).length;return anchor?shared>=pmSelf.length:shared>=Math.min(2,pmSelf.length)});
     if(clash)continue;
     if(!anchor&&m.some(id=>picked.filter(p=>p.ids.includes(id)).length>=2))continue;
     picked.push(c);used.add(c.s);if(picked.length===3)break;
@@ -1608,6 +1629,14 @@ function defaultWears(it){
 }
 function wearLimit(it){const v=it.wearsPerWash;if(v===-1)return Infinity;if(+v>0)return +v;return defaultWears(it)}
 function capacity(it){return wearLimit(it)*(it.qty||1)}
+function isSportBra(i){return i.type==="Sports top"&&i.sleeves&&SLEEVE_RANK[i.sleeves]<=2}
+function isSportOverTop(i){return i.type==="Sports top"&&i.sleeves&&SLEEVE_RANK[i.sleeves]>=3}
+function sportUnderOptions(pool,over){
+  // things that can sit under a sports top: a sports bra, a tank/cami, a plain fitted tee
+  return pool.filter(u=>u.id!==over.id&&!u.needsTags&&available(u)&&(
+    isSportBra(u)||u.type==="Tank / cami"||(u.type==="T-shirt / top"&&["Tight","Fitted"].includes(u.fit)&&SLEEVE_RANK[u.sleeves]<=SLEEVE_RANK[over.sleeves])
+  ));
+}
 function bareUnder(o){
   const tops=o.filter(i=>i.category==="Top"||i.category==="Dress");
   if(!tops.length)return false;
