@@ -219,6 +219,17 @@ main{padding-top:26px}
 .item .ph{background:var(--surface)}
 .brand{display:flex;align-items:center;gap:12px;text-transform:lowercase;font-size:36px;letter-spacing:.01em}
 .brand .logo{width:38px;height:38px;border-radius:10px;flex:none}
+.figbtn{border:0;background:none;padding:0;margin:0;min-width:0;text-align:left;position:relative;cursor:pointer;color:inherit;font:inherit;display:block}
+.figbtn img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;background:var(--surface)}
+.figbtn figcaption{font-size:12.5px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lay.sm .figbtn figcaption{display:none}
+.swapdot{position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:12px;display:grid;place-items:center;opacity:.9}
+.addslot{display:grid;place-items:center;aspect-ratio:1;border:1.5px dashed var(--line);border-radius:4px;color:var(--muted);font-size:26px;background:var(--surface)}
+.slotgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:12px;margin-top:14px}
+.slotpick{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:6px;text-align:center;cursor:pointer;color:inherit;font:inherit}
+.slotpick img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px}
+.slotpick span{font-size:12.5px;line-height:1.2;display:flex;flex-direction:column}
+.slotpick small{color:var(--tag-ink);font-size:11px}
 </style>
 </head>
 <body>
@@ -907,11 +918,30 @@ function scoreOutfit(o,ids,s,ctx){
 }
 const briefKey=()=>[ui.occasion,ui.weather,ui.rain,ui.anchor||""].join("|");
 function refreshIfStale(){if(ui.results.length&&ui.resultsKey!==briefKey())generate();else render()}
+function occasionGap(occ,weather){
+  const avail=items().filter(i=>!i.needsTags&&available(i));
+  const taggedFor=i=>NO_OCCASION.has(i.category)||occ==="Any"||(i.formality||[]).includes(occ);
+  const pool=avail.filter(taggedFor);
+  const has=c=>pool.some(i=>i.category===c);
+  const miss=[];
+  if(!has("Dress")&&!(has("Top")&&has("Bottom"))){
+    if(!has("Top")&&!has("Dress"))miss.push("a top");
+    if(!has("Bottom")&&!has("Dress"))miss.push("a bottom");
+    if(!miss.length)miss.push("a top and a bottom, or a dress");
+  }
+  if(!has("Shoes"))miss.push("shoes");
+  if(miss.length){
+    const list=miss.length===1?miss[0]:miss.slice(0,-1).join(", ")+" or "+miss[miss.length-1];
+    return `No ${occ.toLowerCase()} outfit yet: nothing tagged ${occ} for ${list}. Tag a few pieces with the ${occ} occasion (Closet → Select → Edit tags).`;
+  }
+  // pieces exist but weather filtered them out
+  return `Your ${occ.toLowerCase()} pieces don't suit ${weather.toLowerCase()} weather. Check their warmth, or tag more ${occ} pieces.`;
+}
 function generate(){
   ui.err="";ui.results=suggest();ui.resultsKey=briefKey();
   if(!ui.results.length){
     ui.err=ui.anchor?"Nothing new fits this brief with that piece. Try another occasion or weather."
-      :"No new combinations fit this brief. Try another occasion or weather, or check that pieces are tagged for it.";
+      :occasionGap(ui.occasion,ui.weather)+" You can also try another occasion or weather.";
   }
   render();
 }
@@ -1063,8 +1093,10 @@ async function wearToday(ids,outfitId){
 function resultAt(ref){
   if(!ref)return null;const p=ref.split(":");
   if(p[0]==="q")return {list:ui.results,i:+p[1]};
-  const m=ui.chat[+p[1]];return m?{list:m.outfits,i:+p[2]}:null;
+  if(p[0]==="c"){const m=ui.chat[+p[1]];return m?{list:m.outfits,i:+p[2]}:null}
+  return null;
 }
+function outfitByRef(ref){const r=resultAt(ref);return r?r.list[r.i]:null}
 function exportBackup(){
   const o={app:"closet",version:4,exportedAt:new Date().toISOString()};
   for(const k of KINDS)o[k]=[...S[k].values()];
@@ -1090,17 +1122,18 @@ async function importBackup(file){
 }
 
 /* ================= rendering ================= */
-function tile(i){return `<figure><img src="${i.photo}" alt=""><figcaption>${esc(i.name)}</figcaption></figure>`}
-function collage(ids,small){
+function tile(i,ref){return ref?`<button class="figbtn" data-act="o-slot" data-ref="${ref}" data-id="${i.id}" aria-label="Change ${esc(i.name)}"><img src="${i.photo}" alt=""><figcaption>${esc(i.name)}</figcaption><span class="swapdot" aria-hidden="true">⇄</span></button>`:`<figure><img src="${i.photo}" alt=""><figcaption>${esc(i.name)}</figcaption></figure>`}
+function collage(ids,small,ref){
   const its=ids.map(id=>S.items.get(id)).filter(Boolean).sort((a,b)=>(ORDER[a.category]??9)-(ORDER[b.category]??9));
   if(!its.length)return `<p class="note">These pieces were removed from your closet.</p>`;
   const isMain=i=>MAIN.has(i.category)||i.category==="Swimwear";
   const main=its.filter(isMain),extra=its.filter(i=>!isMain(i));
-  return `<div class="lay${small?" sm":""}">${main.length?`<div class="main n${Math.min(main.length,4)}">${main.map(tile).join("")}</div>`:""}${extra.length?`<div class="extra">${extra.map(tile).join("")}</div>`:""}</div>`;
+  const add=ref?`<button class="figbtn addslot" data-act="o-add" data-ref="${ref}" aria-label="Add a piece">＋</button>`:"";
+  return `<div class="lay${small?" sm":""}">${main.length?`<div class="main n${Math.min(main.length,4)}">${main.map(i=>tile(i,ref)).join("")}</div>`:""}${(extra.length||ref)?`<div class="extra">${extra.map(i=>tile(i,ref)).join("")}${add}</div>`:""}</div>`;
 }
 function chip(act,val,on,extra=""){return `<button class="chip" data-act="${act}" data-v="${esc(val)}" aria-pressed="${on}"${extra}>${esc(val)}</button>`}
 function outfitCard(o,ref){
-  return `<article class="card"><h3>${esc(o.title)}</h3>${collage(o.itemIds)}${o.why?`<p class="why">${esc(o.why)}</p>`:""}
+  return `<article class="card"><h3>${esc(o.title)}</h3>${collage(o.itemIds,false,ref)}${o.why?`<p class="why">${esc(o.why)}</p>`:""}
   ${o.tips&&o.tips.length?`<ul class="tips">${o.tips.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`:""}
   <div class="row">${ui.planDate?`<button class="btn" data-act="r-plan" data-ref="${ref}">Plan for ${esc(dayLabel(ui.planDate))}</button>`:`<button class="btn" data-act="r-wear" data-ref="${ref}">Wear today</button>`}
   <button class="btn ghost" data-act="r-save" data-ref="${ref}" ${o.saved?"disabled":""}>${o.saved?"Saved":"Save"}</button>
@@ -1347,6 +1380,14 @@ async function sheetSave(){
 }
 $("#dlgBody").addEventListener("input",e=>{if(["f-name","f-brand","f-desc","f-price"].includes(e.target.id))syncText()});
 $("#dlgBody").addEventListener("click",async e=>{
+  if(ui.slot){
+    const pick=e.target.closest("[data-slotpick]"),sc=e.target.closest("[data-slotcat]"),sa=e.target.closest("[data-slot]");
+    if(pick){applySlot(pick.dataset.slotpick);return}
+    if(sc){ui.slot.addCat=sc.dataset.slotcat;renderSlot();return}
+    if(sa&&sa.dataset.slot==="remove"){applySlot(null);return}
+    if(sa&&sa.dataset.slot==="close"){ui.slot=null;$("#dlg").close();return}
+    return;
+  }
   if(ui.bulk){bulkClick(e);return}
   const d=ui.draft;if(!d)return;
   const f=e.target.closest("[data-f]"),m=e.target.closest("[data-m]"),a=e.target.closest("[data-sheet]");
@@ -1390,7 +1431,7 @@ $("#dlgBody").addEventListener("click",async e=>{
     $("#dlg").close();ui.queue=[];ui.draft=null;render();
   }
 });
-$("#dlg").addEventListener("close",()=>{if(ui.bulk)ui.bulk=null;if(ui.draft){ui.draft=null;ui.queue=[];render()}});
+$("#dlg").addEventListener("close",()=>{if(ui.bulk)ui.bulk=null;if(ui.slot)ui.slot=null;if(ui.draft){ui.draft=null;ui.queue=[];render()}});
 
 
 /* ================= week planner ================= */
@@ -1609,7 +1650,7 @@ function buildTrip(trip,onlyDate){
     }else{
       out[day.date]=day.occasions.map(occ=>{
         const {pick,w,short}=pickTripOutfit(trip,day,occ,ctx);
-        if(!pick)return {occasion:occ,itemIds:[],short,why:short?`Not enough fresh pieces left for ${occ.toLowerCase()} by this day. Add a laundry day earlier, or tag more pieces for it.`:`Nothing in your closet fits ${occ.toLowerCase()} in ${w.weather.toLowerCase()} weather yet.`,weather:w.weather,rain:w.rain};
+        if(!pick)return {occasion:occ,itemIds:[],short,why:short?`Not enough fresh pieces left for ${occ.toLowerCase()} by this day. Add a laundry day earlier, or tag more pieces for it.`:occasionGap(occ,w.weather),weather:w.weather,rain:w.rain};
         noteUse(ctx,pick.itemIds.map(id=>S.items.get(id)).filter(Boolean));
         return {occasion:occ,itemIds:pick.itemIds,why:pick.why,tips:pick.tips,weather:w.weather,rain:w.rain};
       });
@@ -1771,6 +1812,81 @@ function findGaps(all){
   return g;
 }
 
+
+/* ================= edit a suggested outfit ================= */
+function slotCategory(it){return it.category}
+function candidatesFor(outfit,slotId,ctx){
+  const cur=S.items.get(slotId);if(!cur)return [];
+  const cat=cur.category;const w=wearStats();
+  const others=outfit.itemIds.filter(id=>id!==slotId).map(id=>S.items.get(id)).filter(Boolean);
+  const occ=ctx.occasion||ui.occasion,wea=ctx.weather||ui.weather,rain=ctx.rain!=null?ctx.rain:ui.rain;
+  const fitsO=i=>NO_OCCASION.has(i.category)||occ==="Any"||(i.formality||[]).includes(occ);
+  return items().filter(i=>!i.needsTags&&available(i)&&i.category===cat&&i.id!==slotId&&i.type!=="Sleepwear")
+    .filter(i=>fitsO(i))
+    .map(i=>{
+      let s=0;const combo=[...others,i];
+      // colour harmony with the rest
+      if(typeof colourOK==="function"&&!colourOK(combo.filter(x=>MAIN.has(x.category)||x.category==="Swimwear")))s-=3;
+      const neg=isNeglected(i,w.get(i.id));if(neg)s+=1;
+      if(w.get(i.id))s-=0; else s+=.5;
+      // weather suitability
+      const season=i.season&&i.season.length&&!WEATHER_SEASON[wea].some(ss=>i.season.includes(ss));
+      if(season)s-=4;
+      s+=Math.random()*.3;
+      return {i,s,warn:season?"different season":""};
+    }).sort((a,b)=>b.s-a.s);
+}
+function addableCategories(outfit){
+  const have=new Set(outfit.itemIds.map(id=>S.items.get(id)).filter(Boolean).map(i=>i.category));
+  const opts=[];
+  if(!have.has("Outerwear"))opts.push("Outerwear");
+  if(!have.has("Bag"))opts.push("Bag");
+  if(!have.has("Accessory"))opts.push("Accessory");
+  if(!have.has("Legwear"))opts.push("Legwear");
+  if(!have.has("Shoes"))opts.push("Shoes");
+  return opts.filter(c=>items().some(i=>!i.needsTags&&available(i)&&i.category===c));
+}
+function openSlot(ref,slotId){
+  const o=outfitByRef(ref);if(!o)return;
+  ui.slot={ref,slotId,addCat:null};renderSlot();if(!$("#dlg").open)$("#dlg").showModal();$("#dlgBody").scrollTop=0;
+}
+function openAdd(ref){
+  const o=outfitByRef(ref);if(!o)return;
+  const cats=addableCategories(o);
+  if(!cats.length){toast("This outfit already has every kind of piece");return}
+  ui.slot={ref,slotId:null,addCat:cats[0],cats};renderSlot();if(!$("#dlg").open)$("#dlg").showModal();$("#dlgBody").scrollTop=0;
+}
+function renderSlot(){
+  const st=ui.slot,o=outfitByRef(st.ref);if(!o){$("#dlg").close();return}
+  const ctx={occasion:ui.planDate?ui.occasion:ui.occasion,weather:ui.weather,rain:ui.rain};
+  let h="",cands=[];
+  if(st.slotId){
+    const cur=S.items.get(st.slotId);
+    h+=`<h3>Change the ${esc(cur?cur.name:"piece")}</h3><p class="note">Pick another ${esc((cur?cur.category:"piece").toLowerCase())}, or remove it.</p>`;
+    cands=candidatesFor(o,st.slotId,ctx);
+    const optional=!(MAIN.has(cur.category)||cur.category==="Swimwear");
+    h+=`<div class="row"><button class="btn quiet${optional?"":" danger"}" data-slot="remove">${optional?"Remove from outfit":"Remove anyway"}</button></div>`;
+  }else{
+    h+=`<h3>Add a piece</h3>`;
+    if(st.cats&&st.cats.length>1)h+=`<div class="chips wrap">${st.cats.map(c=>`<button class="chip" data-slotcat="${c}" aria-pressed="${st.addCat===c}">${c}</button>`).join("")}</div>`;
+    const fake={itemIds:o.itemIds};
+    cands=items().filter(i=>!i.needsTags&&available(i)&&i.category===st.addCat).map(i=>({i,s:(isNeglected(i,wearStats().get(i.id))?1:0)+Math.random(),warn:""})).sort((a,b)=>b.s-a.s);
+  }
+  if(!cands.length)h+=`<p class="note">No other ${st.addCat?esc(st.addCat.toLowerCase()):"pieces"} fit this occasion.</p>`;
+  h+=`<div class="slotgrid">${cands.slice(0,40).map(c=>`<button class="slotpick" data-slotpick="${c.i.id}"><img src="${c.i.photo}" alt=""><span>${esc(c.i.name)}${c.warn?`<small>${esc(c.warn)}</small>`:""}</span></button>`).join("")}</div>
+  <div class="row"><button class="btn quiet" data-slot="close">Cancel</button></div>`;
+  $("#dlgBody").innerHTML=h;
+}
+async function applySlot(newId){
+  const st=ui.slot,r=resultAt(st.ref);if(!r){$("#dlg").close();return}
+  const o=r.list[r.i];let ids=o.itemIds.slice();
+  if(st.slotId){const k=ids.indexOf(st.slotId);if(k>=0){if(newId)ids[k]=newId;else ids.splice(k,1)}}
+  else if(newId)ids.push(newId);
+  ids=[...new Set(ids)];
+  r.list[r.i]={...o,itemIds:ids,why:o.why,tips:o.tips,edited:true,saved:false,title:o.title};
+  ui.slot=null;$("#dlg").close();render();
+}
+
 /* ================= bulk edit ================= */
 function openBulk(){
   const ids=[...ui.sel].filter(id=>S.items.has(id));if(!ids.length)return;
@@ -1900,6 +2016,8 @@ document.addEventListener("click",async e=>{
     case "refreshfc":FC.status="idle";loadForecast(true);break;
     case "unanchor":ui.anchor=null;refreshIfStale();break;
     case "gen":generate();break;
+    case "o-slot":openSlot(el.dataset.ref,el.dataset.id);break;
+    case "o-add":openAdd(el.dataset.ref);break;
     case "r-save":{const r=resultAt(el.dataset.ref);const o=r&&r.list[r.i];if(!o)break;await saveOutfit(o.itemIds,o.title,o.why);o.saved=true;render();toast("Outfit saved");break}
     case "r-wear":{const r=resultAt(el.dataset.ref);const o=r&&r.list[r.i];if(!o)break;const oid=await saveOutfit(o.itemIds,o.title,o.why);o.saved=true;await wearToday(o.itemIds,oid);render();break}
     case "r-pass":{const r=resultAt(el.dataset.ref);if(!r)break;const o=r.list.splice(r.i,1)[0];render();if(o)await Store.put("passes",rid(),{itemIds:o.itemIds,at:Date.now()}).catch(()=>{});break}
