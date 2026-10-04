@@ -271,7 +271,7 @@ const WEATHER=["Hot","Warm","Mild","Cool","Cold"];
 const SEASONS=["Spring","Summer","Autumn","Winter"];
 const WEATHER_SEASON={Hot:["Summer"],Warm:["Summer","Spring"],Mild:["Spring","Autumn"],Cool:["Autumn","Winter"],Cold:["Winter"]};
 const WARMTH=["Very light","Light","Medium","Warm"];
-const RANGE={Hot:[0,3],Warm:[0,4],Mild:[2.5,7],Cool:[4.5,10.5],Cold:[7,99]};
+const RANGE={Hot:[0,3],Warm:[0,4.5],Mild:[1.5,7],Cool:[3.5,10.5],Cold:[6,99]};
 const MAXPIECE={Hot:1,Warm:2,Mild:3,Cool:3,Cold:3};
 const COLORS=[["Black","#111"],["Charcoal","#3a3d42"],["Grey","#9a9ea5"],["White","#fff"],["Ivory","#f7f2e4"],["Cream","#efe6cf"],["Beige","#d9c7a7"],["Taupe","#a39383"],["Camel","#c19a6b"],["Brown","#7a4f2e"],["Chocolate","#4a2c1d"],["Khaki","#b5a878"],["Olive","#6b6b2f"],["Green","#2e7d4f"],["Mint","#a8dcc4"],["Teal","#1f7a7a"],["Navy","#1e2a4a"],["Denim","#4a6b92"],["Blue","#2f63c9"],["Light blue","#a9c8ec"],["Lilac","#c7b3e0"],["Purple","#6a3d99"],["Burgundy","#6d1f2e"],["Red","#c62828"],["Rust","#b0522a"],["Orange","#ee8a2a"],["Yellow","#f2d03b"],["Pink","#e88fb0"],["Blush","#f2c9c4"],["Gold","#c9a74a"],["Silver","#c0c4cc"],["Multicolour",""]];
 const COLOR_HEX=Object.fromEntries(COLORS);
@@ -707,7 +707,14 @@ function suggest(){
       if(ui.rain&&cand.some(m=>m.rainproof==="Yes"))cand=cand.filter(m=>m.rainproof==="Yes");
       if(cand.length){o.push(choose(cand));tw=outfitWarmth(o)}
     };
-    const addMid=required=>{let cand=mids.filter(m=>sportOK(m)&&outfitWarmth([...o,m])<=maxW);if(!cand.length&&required&&!sporty)cand=mids;if(cand.length){o.push(choose(cand));tw=outfitWarmth(o)}};
+    const topSleeve=()=>{const rs=o.filter(i=>i.category==="Top"||i.category==="Dress").map(i=>i.sleeves?SLEEVE_RANK[i.sleeves]:0);return rs.length?Math.max(...rs):0};
+    const addMid=required=>{
+      let cand=mids.filter(m=>sportOK(m)&&outfitWarmth([...o,m])<=maxW);
+      // Mild or warmer: don't put a long/three-quarter-sleeve cardigan or blazer over an already long-sleeved top (redundant and too warm).
+      if(!chilly&&topSleeve()>=3.5)cand=cand.filter(m=>!m.sleeves||SLEEVE_RANK[m.sleeves]<=2);
+      if(!cand.length&&required&&!sporty)cand=mids;
+      if(cand.length){o.push(choose(cand));tw=outfitWarmth(o)}
+    };
     if(forcedOuter){o.push(forcedOuter);tw=outfitWarmth(o)}
     // bare arms = straps, strapless, sleeveless or short sleeves as the most covered piece
     const armRank=()=>{const rs=o.filter(i=>i.category==="Top"||i.category==="Dress").map(i=>i.sleeves?SLEEVE_RANK[i.sleeves]:99);return rs.length?Math.max(...rs):99};
