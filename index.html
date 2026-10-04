@@ -772,37 +772,39 @@ function suggest(){
     cands.push(scoreOutfit(uniq,ids,s,{w,pairs,recent,notes,tips,layered,tw}));
   }
   cands.sort((a,b)=>b.score-a.score);
+  const N=ui.tripMode?3:(ui.resultCount||5);
   const picked=[],used=new Set();
   const mainOf=x=>x.o.filter(i=>MAIN.has(i.category)&&i.category!=="Outerwear"&&!(ui.occasion==="Sport"&&isSportBra(i))).map(i=>i.id);
-  // what kind of bottom an outfit uses, to vary skirts vs trousers vs dresses across suggestions
-  const bottomKind=c=>{const b=c.o.find(i=>i.category==="Bottom");if(b)return b.type==="Skirt"?"skirt":b.type==="Shorts"?"shorts":"trousers";return c.o.some(i=>i.category==="Dress")?"dress":"other"};
-  const kindsAvail=new Set(cands.map(bottomKind));
-  // Pass 1: prefer variety — different base pieces, and a spread of bottom kinds when several exist.
+  // what kind of base an outfit uses, to spread skirts, trousers and dresses across suggestions
+  const baseKind=c=>{if(c.o.some(i=>i.category==="Dress"))return "dress";const b=c.o.find(i=>i.category==="Bottom");if(b)return b.type==="Skirt"?"skirt":b.type==="Shorts"?"shorts":"trousers";return "other"};
+  const kindsAvail=new Set(cands.map(baseKind));
+  const perKindCap=Math.max(2,Math.ceil(N/Math.max(1,kindsAvail.size)));
+  // Pass 1: variety — different base pieces, and a spread of base kinds when several exist.
   for(const c of cands){
     if(used.has(c.s))continue;
     const pmSelf=mainOf(c);
     const clash=picked.some(p=>{const pm=mainOf(p);const shared=pmSelf.filter(id=>pm.includes(id)).length;return anchor?shared>=pmSelf.length:shared>=Math.min(2,pmSelf.length)});
     if(clash)continue;
     if(!anchor&&mainOf(c).some(id=>picked.filter(p=>mainOf(p).includes(id)).length>=2))continue;
-    // if more than one kind of bottom is available, don't let one kind take every slot
-    if(!anchor&&kindsAvail.size>1){const k=bottomKind(c);const sameKind=picked.filter(p=>bottomKind(p)===k).length;if(sameKind>=2)continue;}
-    picked.push(c);used.add(c.s);if(picked.length===3)break;
+    if(!anchor&&kindsAvail.size>1){const k=baseKind(c);if(picked.filter(p=>baseKind(p)===k).length>=perKindCap)continue;}
+    picked.push(c);used.add(c.s);if(picked.length===N)break;
   }
-  // Pass 1b: if variety left us short but other bottom kinds exist unused, pull the best of a missing kind in
-  if(picked.length<3&&kindsAvail.size>1){
-    const haveKinds=new Set(picked.map(bottomKind));
-    for(const c of cands){
-      if(used.has(c.s)||haveKinds.has(bottomKind(c)))continue;
-      const pmSelf=mainOf(c);
-      if(picked.some(p=>{const pm=mainOf(p);return pmSelf.filter(id=>pm.includes(id)).length>=Math.min(2,pmSelf.length)}))continue;
-      picked.push(c);used.add(c.s);haveKinds.add(bottomKind(c));if(picked.length===3)break;
+  // Pass 1b: make sure every available base kind gets at least one slot (so dresses and skirts always show)
+  if(picked.length<N&&kindsAvail.size>1){
+    const haveKinds=new Set(picked.map(baseKind));
+    for(const k of kindsAvail){
+      if(haveKinds.has(k))continue;
+      const c=cands.find(x=>!used.has(x.s)&&baseKind(x)===k&&!picked.some(p=>{const pm=mainOf(p),ps=mainOf(x);return ps.filter(id=>pm.includes(id)).length>=Math.min(2,ps.length)}));
+      if(c){picked.push(c);used.add(c.s);haveKinds.add(k);if(picked.length===N)break;}
     }
   }
-  // Pass 2: if the wardrobe is too small for 3 varied looks, fill remaining slots with the best distinct outfits left.
-  if(picked.length<3)for(const c of cands){
+  // Pass 2: fill any remaining slots with the best distinct outfits left.
+  if(picked.length<N)for(const c of cands){
     if(used.has(c.s))continue;
-    picked.push(c);used.add(c.s);if(picked.length===3)break;
+    picked.push(c);used.add(c.s);if(picked.length===N)break;
   }
+  // order so the kinds alternate rather than clustering
+  picked.sort((a,b)=>b.score-a.score);
   return picked.map(c=>({title:c.title,itemIds:c.ids,why:c.why,tips:c.tips,saved:false}));
 }
 /* ---------- colour knowledge ---------- */
