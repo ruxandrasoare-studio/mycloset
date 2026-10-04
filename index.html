@@ -774,14 +774,29 @@ function suggest(){
   cands.sort((a,b)=>b.score-a.score);
   const picked=[],used=new Set();
   const mainOf=x=>x.o.filter(i=>MAIN.has(i.category)&&i.category!=="Outerwear"&&!(ui.occasion==="Sport"&&isSportBra(i))).map(i=>i.id);
-  // Pass 1: prefer variety — no two picks sharing their whole base, no main piece in more than two picks.
+  // what kind of bottom an outfit uses, to vary skirts vs trousers vs dresses across suggestions
+  const bottomKind=c=>{const b=c.o.find(i=>i.category==="Bottom");if(b)return b.type==="Skirt"?"skirt":b.type==="Shorts"?"shorts":"trousers";return c.o.some(i=>i.category==="Dress")?"dress":"other"};
+  const kindsAvail=new Set(cands.map(bottomKind));
+  // Pass 1: prefer variety — different base pieces, and a spread of bottom kinds when several exist.
   for(const c of cands){
     if(used.has(c.s))continue;
     const pmSelf=mainOf(c);
     const clash=picked.some(p=>{const pm=mainOf(p);const shared=pmSelf.filter(id=>pm.includes(id)).length;return anchor?shared>=pmSelf.length:shared>=Math.min(2,pmSelf.length)});
     if(clash)continue;
     if(!anchor&&mainOf(c).some(id=>picked.filter(p=>mainOf(p).includes(id)).length>=2))continue;
+    // if more than one kind of bottom is available, don't let one kind take every slot
+    if(!anchor&&kindsAvail.size>1){const k=bottomKind(c);const sameKind=picked.filter(p=>bottomKind(p)===k).length;if(sameKind>=2)continue;}
     picked.push(c);used.add(c.s);if(picked.length===3)break;
+  }
+  // Pass 1b: if variety left us short but other bottom kinds exist unused, pull the best of a missing kind in
+  if(picked.length<3&&kindsAvail.size>1){
+    const haveKinds=new Set(picked.map(bottomKind));
+    for(const c of cands){
+      if(used.has(c.s)||haveKinds.has(bottomKind(c)))continue;
+      const pmSelf=mainOf(c);
+      if(picked.some(p=>{const pm=mainOf(p);return pmSelf.filter(id=>pm.includes(id)).length>=Math.min(2,pmSelf.length)}))continue;
+      picked.push(c);used.add(c.s);haveKinds.add(bottomKind(c));if(picked.length===3)break;
+    }
   }
   // Pass 2: if the wardrobe is too small for 3 varied looks, fill remaining slots with the best distinct outfits left.
   if(picked.length<3)for(const c of cands){
