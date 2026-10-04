@@ -773,14 +773,19 @@ function suggest(){
   }
   cands.sort((a,b)=>b.score-a.score);
   const picked=[],used=new Set();
+  const mainOf=x=>x.o.filter(i=>MAIN.has(i.category)&&i.category!=="Outerwear"&&!(ui.occasion==="Sport"&&isSportBra(i))).map(i=>i.id);
+  // Pass 1: prefer variety — no two picks sharing their whole base, no main piece in more than two picks.
   for(const c of cands){
     if(used.has(c.s))continue;
-    const m=c.o.filter(i=>MAIN.has(i.category)&&i.category!=="Outerwear").map(i=>i.id);
-    const mainOf=x=>x.o.filter(i=>MAIN.has(i.category)&&i.category!=="Outerwear"&&!(ui.occasion==="Sport"&&isSportBra(i))).map(i=>i.id);
     const pmSelf=mainOf(c);
     const clash=picked.some(p=>{const pm=mainOf(p);const shared=pmSelf.filter(id=>pm.includes(id)).length;return anchor?shared>=pmSelf.length:shared>=Math.min(2,pmSelf.length)});
     if(clash)continue;
-    if(!anchor&&m.some(id=>picked.filter(p=>p.ids.includes(id)).length>=2))continue;
+    if(!anchor&&mainOf(c).some(id=>picked.filter(p=>mainOf(p).includes(id)).length>=2))continue;
+    picked.push(c);used.add(c.s);if(picked.length===3)break;
+  }
+  // Pass 2: if the wardrobe is too small for 3 varied looks, fill remaining slots with the best distinct outfits left.
+  if(picked.length<3)for(const c of cands){
+    if(used.has(c.s))continue;
     picked.push(c);used.add(c.s);if(picked.length===3)break;
   }
   return picked.map(c=>({title:c.title,itemIds:c.ids,why:c.why,tips:c.tips,saved:false}));
