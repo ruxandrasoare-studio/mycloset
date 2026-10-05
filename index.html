@@ -746,7 +746,7 @@ function suggest(){
     if(!hasOuter()&&outers.length&&(chilly||(ui.rain&&ui.weather!=="Hot")))addOuter(chilly);
     // optional extra first layer when it's still light enough, or needed for warmth
     const topLayered=layered&&!dress;
-    const midChance=ui.weather==="Mild"?.3:isCool?(hasOuter()?.2:.5):0;
+    const midChance=ui.layerDown?.8:ui.weather==="Mild"?.3:isCool?(hasOuter()?.2:.5):0;
     if(!hasMid()&&mids.length&&(tw<minW||(!topLayered&&!bare&&Math.random()<midChance)))addMid(false);
     if(!hasOuter()&&outers.length&&tw<minW)addOuter(false);
     // coverage checks: skip outfits that leave arms bare
@@ -758,13 +758,19 @@ function suggest(){
     if(chilly&&sportOuters.length&&!hasOuter()&&!sporty)continue;
     if(chilly&&sporty&&sportOuters.length&&!hasOuter()){const c=sportOuters.filter(m=>outfitWarmth([...o,m])<=maxW);if(c.length){o.push(choose(c));tw=outfitWarmth(o)}}
     if(chilly&&!sportOuters.length&&!sporty&&!tips.includes("jacket"))tips.push("Add a jacket or coat on top: none are tagged for this weather yet.");
-    // tights with dresses and skirts when it's cool
+    // tights with bare-legged skirts and dresses — required below Mild, optional in Mild for dressier looks
     const legsOut=dress?dress.dressLength!=="Maxi":bottom&&(bottom.type==="Skirt"||bottom.type==="Shorts")&&bottom.bottomLength!=="Maxi";
-    if(legsOut&&tights.length&&!(anchor&&anchor.category==="Legwear")){
-      const wantT=ui.weather==="Cold"||ui.weather==="Cool"?.85:(ui.weather==="Mild"&&["Office","Elegant","Business travel"].includes(ui.occasion))?.3:0;
-      if(Math.random()<wantT){
-        let tl=tights;if(ui.weather==="Cold"&&tl.some(x=>x.opacity==="Opaque"))tl=tl.filter(x=>x.opacity==="Opaque");
-        o.push(choose(tl));tw=outfitWarmth(o);
+    const coldLegs=(ui.weather==="Cold"||ui.weather==="Cool")&&ui.occasion!=="Sport";
+    if(legsOut&&!(anchor&&anchor.category==="Legwear")){
+      if(coldLegs){
+        // tights are a must; prefer opaque, warmer first
+        let tl=tights.slice();
+        if(ui.weather==="Cold"&&tl.some(x=>x.opacity==="Opaque"))tl=tl.filter(x=>x.opacity==="Opaque");
+        if(tl.length){o.push(choose(tl));tw=outfitWarmth(o);}
+        else tips.push(`It's ${ui.weather.toLowerCase()}: wear tights under the ${(dress||bottom).name}. None are tagged yet (Legwear → Tights).`);
+      }else if(tights.length){
+        const wantT=(ui.weather==="Mild"&&["Office","Elegant","Business travel"].includes(ui.occasion))?.3:0;
+        if(Math.random()<wantT){o.push(choose(tights));tw=outfitWarmth(o);}
       }
     }
     if(anchor&&anchor.category==="Legwear")o.push(anchor);
@@ -978,12 +984,18 @@ function scoreOutfit(o,ids,s,ctx){
   if(ui.travelDay){const bulky=o.filter(i=>W(i)>=3||["Boots","Coat","Puffer"].includes(i.type));
     if(bulky.length){score+=2*bulky.length;tips.push(`Wear the ${bulky.slice(0,2).map(i=>i.name).join(" and ")} while travelling, so ${bulky.length>1?"they're":"it's"} not taking up suitcase space.`)}}
   if(!ui.tripMode)for(const i of o)if(dueForWash(i))score-=3;
+  // swing day: reward a removable layer (mid or outer) so you can peel off as it warms
+  if(ui.layerDown){
+    const removable=o.find(i=>i.category==="Outerwear");
+    if(removable){score+=2.5;tips.push(`Start with the ${removable.name} and take it off as the day warms up.`);}
+    else score-=1.5;
+  }
   score+=Math.random()*1.5;
   const tn=o.filter(i=>(i.category==="Top"||i.category==="Bottom"||i.category==="Dress"||i.category==="Swimwear")).map(i=>i.name);
   const title=cap(tn.join(" + "));
   return {o,ids,s,score,title:title.length>52?title.slice(0,50)+"…":title,why:why.join(" "),tips};
 }
-const briefKey=()=>[ui.occasion,ui.weather,ui.rain,ui.anchor||""].join("|");
+const briefKey=()=>[ui.occasion,ui.weather,ui.rain,ui.anchor||"",ui.layerDown?"L":""].join("|");
 function refreshIfStale(){if(ui.results.length&&ui.resultsKey!==briefKey())generate();else render()}
 function occasionGap(occ,weather){
   const avail=items().filter(i=>!i.needsTags&&available(i));
@@ -1039,11 +1051,17 @@ function forecastFor(data,key){
   if(data.shift)key=(+key.slice(0,4)-data.shift)+key.slice(4);
   const idx=[];data.time.forEach((t,i)=>{const h=+t.slice(11,13);if(t.startsWith(key)&&h>=8&&h<=19)idx.push(i)});
   const temps=idx.map(i=>data.apparent_temperature[i]).filter(x=>x!=null);if(!temps.length)return null;
-  const feels=Math.round(temps.reduce((a,b)=>a+b,0)/temps.length);
+  const avg=temps.reduce((a,b)=>a+b,0)/temps.length;
+  const lo=Math.min(...temps),hi=Math.max(...temps);
+  // Dress for the colder part of the day, but not the single coldest spike: weight the morning low against the average.
+  const dressTemp=Math.round(lo*0.6+avg*0.4);
+  const loBand=weatherFromTemp(lo),hiBand=weatherFromTemp(hi),dressBand=weatherFromTemp(dressTemp);
+  // A "swing" day spans more than one weather band and a real temperature gap.
+  const swing=loBand!==hiBand&&(hi-lo)>=5;
   let rain=0,wet=false;
   if(data.precipitation_probability){const probs=idx.map(i=>data.precipitation_probability[i]).filter(x=>x!=null);rain=probs.length?Math.max(...probs):0;wet=rain>=50}
   else if(data.precipitation){const wetH=idx.filter(i=>(data.precipitation[i]||0)>=0.2).length;wet=wetH>=2;rain=wet?60:10}
-  return {feels,lo:Math.round(Math.min(...temps)),hi:Math.round(Math.max(...temps)),rain,weather:weatherFromTemp(feels),wet,hist:!!data.shift};
+  return {feels:Math.round(avg),dressTemp,lo:Math.round(lo),hi:Math.round(hi),rain,weather:dressBand,loBand,hiBand,swing,wet,hist:!!data.shift};
 }
 function dayLabel(key){
   const t=today(),tm=dateForOffset(1);
@@ -1051,7 +1069,7 @@ function dayLabel(key){
   return new Date(dayMs(key)).toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"});
 }
 function dayForecast(){return forecastFor(FC.data,dateForOffset(ui.fcOff||0))}
-function applyForecast(){if(ui.weatherManual)return;const f=dayForecast();if(f){ui.weather=f.weather;ui.rain=f.wet}if(ui.ready&&ui.results.length&&ui.resultsKey!==briefKey()){ui.err="";ui.results=suggest();ui.resultsKey=briefKey()}}
+function applyForecast(){if(ui.weatherManual){ui.layerDown=false;return}const f=dayForecast();if(f){ui.weather=f.weather;ui.rain=f.wet;ui.layerDown=!!f.swing}if(ui.ready&&ui.results.length&&ui.resultsKey!==briefKey()){ui.err="";ui.results=suggest();ui.resultsKey=briefKey()}}
 function forecastHTML(){
   const day=dayLabel(dateForOffset(ui.fcOff||0));
   const toggle=`<div class="chips" style="padding-top:0;margin:0 0 8px;padding-left:0;padding-right:0">${[0,1,2,3,4,5,6].map(n=>`<button class="chip" data-act="fcday" data-v="${n}" aria-pressed="${(ui.fcOff||0)===n}">${esc(n<2?(n?"Tomorrow":"Today"):new Date(dayMs(dateForOffset(n))).toLocaleDateString(undefined,{weekday:"short",day:"numeric"}))}</button>`).join("")}</div>`;
@@ -1059,7 +1077,9 @@ function forecastHTML(){
   if(FC.status==="loading"&&!f)return `<div class="fc"><p>Checking the forecast for your location…</p></div>`;
   if(f){
     const age=Math.round((Date.now()-FC.at)/6e4);
-    const line=`<p><b>${day}:</b> feels like ${f.feels}°C (${f.lo} to ${f.hi}°), ${f.rain}% chance of rain → <b>${f.weather}${f.wet?" + Rain":""}</b></p>`;
+    const line=f.swing
+      ? `<p><b>${day}:</b> ${f.lo}° in the morning, up to ${f.hi}° later, ${f.rain}% chance of rain → dress for <b>${f.weather}${f.wet?" + Rain":""}</b> and peel off a layer as it warms.</p>`
+      : `<p><b>${day}:</b> feels like ${f.feels}°C (${f.lo} to ${f.hi}°), ${f.rain}% chance of rain → <b>${f.weather}${f.wet?" + Rain":""}</b></p>`;
     const note=ui.weatherManual?`<p class="note" style="margin-top:6px">You've picked the weather yourself. <button class="linkbtn" data-act="usefc">Use the forecast</button></p>`
       :(age>90?`<p class="note" style="margin-top:6px">Forecast from ${age>=120?Math.round(age/60)+" hours":age+" minutes"} ago. <button class="linkbtn" data-act="refreshfc">Refresh</button></p>`:"");
     return `<div class="fc">${toggle}${line}${note}</div>`;
@@ -1537,7 +1557,7 @@ function renderPlan(){
   let h=`<h1>Plan</h1><p class="sub">Pick outfits ahead, and plan trips with a packing list.</p><!--/head--><h2>This week</h2>`;
   for(let n=0;n<7;n++){
     const key=dateForOffset(n),p=S.plans.get(key),f=forecastFor(FC.data,key),logged=S.log.get(key);
-    h+=`<article class="card"><div class="dayhead"><h3>${esc(dayLabel(key))}</h3><span class="note">${f?`${f.feels}°C, ${f.weather}${f.wet?" + rain":""}`:""}</span></div>`;
+    h+=`<article class="card"><div class="dayhead"><h3>${esc(dayLabel(key))}</h3><span class="note">${f?(f.swing?`${f.lo}–${f.hi}°, ${f.weather}${f.wet?" + rain":""}`:`${f.feels}°C, ${f.weather}${f.wet?" + rain":""}`):""}</span></div>`;
     if(p){
       h+=`${collage(p.itemIds,true,"plan:"+key)}<div class="row">${n===0&&!logged?`<button class="btn" data-act="p-wear" data-v="${key}">Wear this</button>`:""}${n===0&&logged?`<span class="note">Logged</span>`:""}<button class="btn ghost" data-act="p-choose" data-v="${key}">Change</button><button class="btn quiet" data-act="p-clear" data-v="${key}">Clear</button></div>`;
     }else h+=`<div class="row" style="margin-top:4px"><button class="btn ghost" data-act="p-choose" data-v="${key}">Choose outfit</button></div>`;
