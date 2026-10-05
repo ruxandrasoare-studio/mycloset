@@ -231,6 +231,8 @@ main{padding-top:26px}
 .slotpick span{font-size:12.5px;line-height:1.2;display:flex;flex-direction:column}
 .editedtag{font-size:11px;font-weight:600;color:var(--tag-ink);background:var(--tag);padding:1px 7px;border-radius:999px;margin-left:4px}
 .slotpick small{color:var(--tag-ink);font-size:11px}
+.histmonth{font-size:13px;font-weight:600;color:var(--muted);margin:18px 0 6px;letter-spacing:.02em}
+.worntag{font-size:13px;font-weight:600;color:var(--accent);margin:0 0 8px}
 </style>
 </head>
 <body>
@@ -1183,6 +1185,7 @@ function resultAt(ref){
   if(p[0]==="c"){const m=ui.chat[+p[1]];return m?{list:m.outfits,i:+p[2]}:null}
   if(p[0]==="t"){const t=S.trips.get(ui.tripId);const d=p.slice(1,-1).join(":");return t&&t.outfits[d]?{list:t.outfits[d],i:+p[p.length-1],trip:t,date:d}:null}
   if(p[0]==="plan"){const d=p.slice(1).join(":");const pl=S.plans.get(d);return pl?{list:[pl],i:0,plan:d}:null}
+  if(p[0]==="logday"){const d=p.slice(1).join(":");const lg=S.log.get(d);return lg?{list:[lg],i:0,logday:d}:null}
   return null;
 }
 function outfitByRef(ref){const r=resultAt(ref);return r?r.list[r.i]:null}
@@ -1345,13 +1348,21 @@ function renderOutfits(){
     h+=`<article class="card"><h3>${esc(o.title)}</h3>${collage(o.itemIds,true)}${o.why?`<p class="why">${esc(o.why)}</p>`:""}<p class="note">${n?`Worn ${n}x`:"Not worn yet"}</p>
     <div class="row">${ui.planDate?`<button class="btn" data-act="o-plan" data-id="${o.id}">Plan for ${esc(dayLabel(ui.planDate))}</button>`:`<button class="btn" data-act="o-wear" data-id="${o.id}">Wear today</button>`}<button class="btn quiet" data-act="o-del" data-id="${o.id}">Remove</button></div></article>`;
   });
-  const cutoff=Date.now()-14*864e5;
-  const hist=[...S.log.values()].filter(e=>e.date!==today()&&dayMs(e.date)>=cutoff).sort((a,b)=>b.date.localeCompare(a.date));
+  const hist=[...S.log.values()].filter(e=>e.date!==today()).sort((a,b)=>b.date.localeCompare(a.date));
   if(hist.length){
-    h+=`<h2>Last 2 weeks</h2>`;
-    hist.forEach(e=>{const d=new Date(dayMs(e.date)).toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"});
-      h+=`<div class="hist"><span class="d">${esc(d)}</span><div class="t">${(e.itemIds||[]).map(id=>S.items.get(id)).filter(Boolean).map(i=>`<img src="${i.photo}" alt="${esc(i.name)}">`).join("")}</div></div>`});
-  }
+    const total=hist.length+(S.log.get(today())?1:0);
+    h+=`<h2>History${total?` (${total})`:""}</h2>`;
+    const limit=ui.historyAll?hist.length:14;
+    let month="";
+    hist.slice(0,limit).forEach(e=>{
+      const dt=new Date(dayMs(e.date));const mk=dt.toLocaleDateString(undefined,{month:"long",year:"numeric"});
+      if(mk!==month){month=mk;h+=`<p class="histmonth">${esc(mk)}</p>`;}
+      const d=dt.toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"});
+      h+=`<div class="hist"><span class="d">${esc(d)}</span><div class="t">${(e.itemIds||[]).map(id=>S.items.get(id)).filter(Boolean).map(i=>`<img src="${i.photo}" alt="${esc(i.name)}">`).join("")}</div></div>`;
+    });
+    if(!ui.historyAll&&hist.length>14)h+=`<div class="row"><button class="btn ghost" data-act="hist-all">Show all ${hist.length} days</button></div>`;
+    else if(ui.historyAll&&hist.length>14)h+=`<div class="row"><button class="btn quiet" data-act="hist-less">Show less</button></div>`;
+  }else h+=`<h2>History</h2><p class="sub">Every outfit you log appears here as a diary, newest first.</p>`;
   return h;
 }
 
@@ -1558,8 +1569,11 @@ function renderPlan(){
   for(let n=0;n<7;n++){
     const key=dateForOffset(n),p=S.plans.get(key),f=forecastFor(FC.data,key),logged=S.log.get(key);
     h+=`<article class="card"><div class="dayhead"><h3>${esc(dayLabel(key))}</h3><span class="note">${f?(f.swing?`${f.lo}–${f.hi}°, ${f.weather}${f.wet?" + rain":""}`:`${f.feels}°C, ${f.weather}${f.wet?" + rain":""}`):""}</span></div>`;
-    if(p){
-      h+=`${collage(p.itemIds,true,"plan:"+key)}<div class="row">${n===0&&!logged?`<button class="btn" data-act="p-wear" data-v="${key}">Wear this</button>`:""}${n===0&&logged?`<span class="note">Logged</span>`:""}<button class="btn ghost" data-act="p-choose" data-v="${key}">Change</button><button class="btn quiet" data-act="p-clear" data-v="${key}">Clear</button></div>`;
+    if(logged){
+      // what was actually worn takes precedence and shows as worn
+      h+=`<p class="worntag">✓ Worn</p>${collage(logged.itemIds,true,n===0?"logday:"+key:null)}<div class="row"><button class="btn ghost" data-act="p-choose" data-v="${key}">Wear something else</button></div>`;
+    }else if(p){
+      h+=`${collage(p.itemIds,true,"plan:"+key)}<div class="row">${n===0?`<button class="btn" data-act="p-wear" data-v="${key}">Wear this</button>`:""}<button class="btn ghost" data-act="p-choose" data-v="${key}">Change</button><button class="btn quiet" data-act="p-clear" data-v="${key}">Clear</button></div>`;
     }else h+=`<div class="row" style="margin-top:4px"><button class="btn ghost" data-act="p-choose" data-v="${key}">Choose outfit</button></div>`;
     h+=`</article>`;
   }
@@ -1887,6 +1901,10 @@ function renderStats(){
     <div class="stat"><b>${pieces}</b><span>pieces</span></div>
     <div class="stat"><b>${S.log.size}</b><span>days logged</span></div>
     <div class="stat"><b>${pct}%</b><span>of your closet worn in the last 30 days</span></div></div>`;
+  // most-worn saved outfit
+  const outWorn=new Map();for(const e of S.log.values())if(e.outfitId)outWorn.set(e.outfitId,(outWorn.get(e.outfitId)||0)+1);
+  const topOutfit=[...S.outfits.values()].map(o=>({o,n:outWorn.get(o.id)||0})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n)[0];
+  if(topOutfit)h+=`<h2>Most-worn outfit</h2><article class="card"><h3>${esc(topOutfit.o.title)}</h3>${collage(topOutfit.o.itemIds,true)}<p class="note">Worn ${topOutfit.n}x</p></article>`;
   const most=all.filter(i=>w.get(i.id)).sort((a,b)=>w.get(b.id).count-w.get(a.id).count).slice(0,5);
   if(most.length){h+=`<h2>Most worn</h2>`;most.forEach(i=>h+=statRow(i,`${w.get(i.id).count}x, last ${ago(w.get(i.id).last)}`))}
   const never=all.filter(i=>!w.get(i.id));
@@ -2004,6 +2022,7 @@ async function applySlot(newId){
   ui.slot=null;$("#dlg").close();
   if(r.trip){await Store.put("trips",r.trip.id,r.trip)}
   if(r.plan){await Store.put("plans",r.plan,r.list[0])}
+  if(r.logday){await Store.put("log",r.logday,r.list[0])}
   render();
 }
 
@@ -2123,6 +2142,8 @@ document.addEventListener("click",async e=>{
     case "t-del":{if(el.dataset.armed){await Store.remove("trips",ui.tripId);ui.tripId=null;render();toast("Trip deleted")}else{el.dataset.armed="1";el.textContent="Tap again to delete this trip"}break}
     case "t-wear":{const t=S.trips.get(ui.tripId);const o=t&&t.outfits[el.dataset.d]&&t.outfits[el.dataset.d][+el.dataset.i];if(o){const oid=await saveOutfit(o.itemIds,o.occasion+" outfit",o.why);await wearToday(o.itemIds,oid)}render();break}
     case "goto-filter":ui.tab="closet";ui.filter=v;render();scrollTo(0,0);break;
+    case "hist-all":ui.historyAll=true;render();break;
+    case "hist-less":ui.historyAll=false;render();break;
     case "s-laundry":{const ids=[...ui.sel];const allFull=ids.every(i=>{const it=S.items.get(i)||{};return inWash(it)>=qtyOf(it)});
       for(const i of ids){const it=S.items.get(i);if(it)await moveToWash(it,allFull?-qtyOf(it):1)}
       toast(allFull?"Washed and back in your closet":"One of each sent to the wash");ui.sel.clear();ui.selecting=false;render();break}
