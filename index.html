@@ -385,6 +385,10 @@ async function migrate(){
     delete n.fc;delete n.place;delete n.lat;delete n.lon;
     await Store.put("trips",n.id,n);
   }
+  // backfill per-copy laundry for every item, including already-migrated ones
+  for(const it of S.items.values()){
+    if(it.inWash==null){const v=(it.status==="In laundry")?(it.qty||1):0;await Store.put("items",it.id,{...it,inWash:v})}
+  }
   for(const it of S.items.values()){
     if(it.v===3)continue;
     const n={...it};
@@ -401,6 +405,7 @@ async function migrate(){
     }
     for(const k of ["material","pattern","closure"])if(n[k]!=null&&!Array.isArray(n[k]))n[k]=n[k]?[n[k]]:[];
     if(n.type==="T-shirt")n.type="T-shirt / top";
+    if(n.inWash==null)n.inWash=(n.status==="In laundry")?(n.qty||1):0;
     if("color2" in n){n.colors2=arr(n.colors2).length?n.colors2:(n.color2?[n.color2]:[]);delete n.color2}
     n.v=3;
     await Store.put("items",n.id,n);
@@ -419,9 +424,20 @@ function daysSince(it,w){const ref=w&&w.last?dayMs(w.last):(it.addedAt||Date.now
 function isNeglected(it,w){return !it.needsTags&&daysSince(it,w)>=NEGLECT_DAYS}
 function ago(date){if(!date)return "never";const d=Math.round((dayMs(today())-dayMs(date))/864e5);return d<=0?"today":d===1?"yesterday":d+" days ago"}
 function items(){return [...S.items.values()]}
-const available=it=>!it.status||it.status==="In closet";
+const qtyOf=it=>Math.max(1,it.qty||1);
+const inWash=it=>Math.min(qtyOf(it),Math.max(0,it.inWash||0));
+const cleanCount=it=>it.status==="At tailor"?0:qtyOf(it)-inWash(it);
+const available=it=>it.status!=="At tailor"&&cleanCount(it)>0;
 function wearsSince(it){const since=it.washedAt||"";let n=0;for(const e of S.log.values())if(e.date>since&&(e.itemIds||[]).includes(it.id))n++;return n}
-function dueForWash(it){if(!it||it.needsTags)return false;const lim=wearLimit(it);return isFinite(lim)&&available(it)&&wearsSince(it)>=lim*(it.qty||1)}
+function dueForWash(it){if(!it||it.needsTags||it.status==="At tailor")return false;const lim=wearLimit(it);if(!isFinite(lim))return false;
+  // the set is due when every clean copy has reached its wear limit
+  return cleanCount(it)>0&&wearsSince(it)>=lim*qtyOf(it);}
+function laundryLabel(it){const w=inWash(it),q=qtyOf(it);if(it.status==="At tailor")return "At tailor";if(w<=0)return "";return q>1?`${w} of ${q} in wash`:"In laundry";}
+async function moveToWash(it,n){const q=qtyOf(it);const cur=inWash(it);const next=Math.max(0,Math.min(q,cur+n));
+  const patch={...it,inWash:next};if(next<cur)patch.washedAt=today();
+  // keep legacy status roughly in sync for display elsewhere
+  patch.status=next>=q?"In laundry":"In closet";if(it.status==="At tailor"&&n===0)patch.status="At tailor";
+  await Store.put("items",it.id,patch);return patch;}
 const fmtLim=n=>isFinite(n)?String(n):"no limit";
 const W=it=>it.warmth==null?2:+it.warmth;
 const arr=v=>Array.isArray(v)?v:(v?[v]:[]);
@@ -1231,10 +1247,10 @@ function renderCloset(){
   if(filters.length>1)h+=`<div class="chips" role="toolbar" aria-label="Filter">${filters.map(f=>chip("filter",f,ui.filter===f)).join("")}</div>`;
   if(ui.selecting)h+=`<p class="note">Tap pieces to log today's outfit, save a combination, or send them to the laundry.</p>`;
   h+=`<div class="grid">${list.map(it=>{
-    const s=w.get(it.id),neg=isNeglected(it,s),sel=ui.sel.has(it.id),off=!available(it);
+    const s=w.get(it.id),neg=isNeglected(it,s),sel=ui.sel.has(it.id),off=!available(it)||inWash(it)>0;
     return `<div><button class="item${sel?" sel":""}${off?" off":""}" data-act="item" data-id="${it.id}" aria-label="${esc(it.name||"Untagged piece")}${ui.selecting?(sel?", selected":", not selected"):""}">
       <div class="ph"><img src="${it.photo}" alt="" loading="lazy"></div>
-      ${off?`<span class="status">${esc(it.status)}</span>`:""}
+      ${laundryLabel(it)?`<span class="status">${esc(laundryLabel(it))}</span>`:""}
       ${ui.selecting?`<span class="check" aria-hidden="true">${sel?"✓":""}</span>`:""}
       <span class="hangtag${neg?" neg":""}${it.needsTags?" pending":""}"><b>${esc(it.needsTags?"Needs tags":it.name)}</b>${it.qty>1?`<span class="qty">×${it.qty}</span>`:""}</span></button>
       <p class="meta">${dueForWash(it)?"Due for a wash":s?`Worn ${s.count}x, ${ago(s.last)}`:"Never worn yet"}</p></div>`;
@@ -1332,15 +1348,15 @@ function render(){
   ui.rendering=false;
   document.querySelectorAll("#tabs button").forEach(b=>{if(b.dataset.tab===ui.tab)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
   if(ui.tab==="closet"&&ui.selecting&&ui.sel.size){
-    const allOff=[...ui.sel].every(id=>!available(S.items.get(id)||{}));
-    $("#selbar").innerHTML=`<div class="selbar"><span>${ui.sel.size} selected</span><button class="btn" data-act="s-wear">Wear today</button><button class="btn" data-act="s-save">Save outfit</button><button class="btn" data-act="s-edit">Edit tags</button><button class="btn" data-act="s-laundry">${allOff?"Back in closet":"To laundry"}</button><button class="btn quiet" data-act="s-clear">Clear</button></div>`;
+    const allOff=[...ui.sel].every(id=>{const it=S.items.get(id)||{};return inWash(it)>=qtyOf(it)});
+    $("#selbar").innerHTML=`<div class="selbar"><span>${ui.sel.size} selected</span><button class="btn" data-act="s-wear">Wear today</button><button class="btn" data-act="s-save">Save outfit</button><button class="btn" data-act="s-edit">Edit tags</button><button class="btn" data-act="s-laundry">${allOff?"Mark washed":"To laundry"}</button><button class="btn quiet" data-act="s-clear">Clear</button></div>`;
   }else $("#selbar").innerHTML="";
 }
 
 /* ================= item sheet ================= */
 function openItem(id,inQueue){
   const it=S.items.get(id);if(!it)return;
-  ui.draft=JSON.parse(JSON.stringify({...it,formality:it.formality||[],season:it.season||[],qty:it.qty||1,status:it.status||"In closet"}));
+  ui.draft=JSON.parse(JSON.stringify({...it,formality:it.formality||[],season:it.season||[],qty:it.qty||1,status:it.status||"In closet",inWash:it.inWash||0}));
   ui.draftId=id;ui.inQueue=!!inQueue;
   renderSheet();
   if(!$("#dlg").open)$("#dlg").showModal();
@@ -1351,6 +1367,15 @@ function single(field,opts,cur,colors){
 }
 function multi(field,opts,cur,colors){return opts.map(v=>`<button type="button" class="chip" data-m="${field}" data-v="${esc(v)}" aria-pressed="${arr(cur).includes(v)}">${colors?swatch(v):""}${esc(v)}</button>`).join("")}
 function swatch(c){return c==="Multicolour"?`<span class="sw multi"></span>`:`<span class="sw" style="background:${COLOR_HEX[c]}"></span>`}
+function laundryControl(d){
+  const q=qtyOf(d),w=Math.min(q,Math.max(0,d.inWash||0)),clean=q-w;
+  if(d.status==="At tailor")return `<p class="note" style="margin-top:6px">This piece is at the tailor, so it's out of rotation.</p>`;
+  if(q===1){
+    return `<div class="chips wrap">${["In closet","In laundry"].map(v=>`<button type="button" class="chip" data-wash1="${v}" aria-pressed="${(v==="In laundry")===(w>0)}">${v}</button>`).join("")}</div>`;
+  }
+  return `<p class="note" style="margin:6px 0 0">${clean} clean, ${w} in the wash.</p>
+  <div class="stepper" style="margin-top:8px"><button type="button" data-washstep="-1" aria-label="One fewer in wash">−</button><span>${w} in wash</span><button type="button" data-washstep="1" aria-label="One more in wash">+</button></div>`;
+}
 function renderSheet(){
   const d=ui.draft,id=ui.draftId;const cat=d.category;
   const s=wearStats().get(id);
@@ -1365,7 +1390,8 @@ function renderSheet(){
   let h=`${ui.inQueue?`<p class="count">${ui.queueLabel} ${pos+1} of ${ui.queue.length}</p>`:""}
   <img class="ph" src="${d.photo}" alt="">
   <div class="row" style="margin-top:8px"><button type="button" class="btn ghost" data-sheet="photo">Change photo</button>${!ui.inQueue&&!d.needsTags?`<button type="button" class="btn ghost" data-sheet="dup">Duplicate</button>`:""}</div>
-  <div class="field"><span>Status</span><div class="chips wrap">${single("status",["In closet","In laundry","At tailor"],d.status)}</div></div>
+  <div class="field"><span>Laundry</span>${laundryControl(d)}</div>
+  <div class="field"><span>Also</span><div class="chips wrap"><button type="button" class="chip" data-tailor="1" aria-pressed="${d.status==="At tailor"}">At tailor</button></div></div>
   <div class="sec"><h4>Shop description</h4><p class="hint">Paste the product description and tap Fill tags. Check what it picks up.</p>
   <textarea id="f-desc" placeholder="Paste from the shop's website">${esc(d.desc||"")}</textarea>
   <div class="row"><button type="button" class="btn ghost" data-sheet="fill">Fill tags from description</button></div></div>
@@ -1391,7 +1417,7 @@ function renderSheet(){
   }else h+=`</div>`;
   const since=!d.needsTags&&cat?wearsSince(d):0,lim=cat?wearLimit(d):Infinity;
   h+=`${!ui.inQueue?`<p class="stats">${s?`Worn ${s.count}x, last ${ago(s.last)}.`:"Never worn yet."}${isFinite(lim)&&!d.needsTags?` ${since} of ${lim*(d.qty||1)} wears since the last wash.`:""}</p>`:""}
-  ${!ui.inQueue&&!d.needsTags&&(since>0||d.status==="In laundry")?`<div class="row"><button type="button" class="btn ghost" data-sheet="washed">Mark as washed</button></div>`:""}
+
   <p class="err" id="d-err" hidden></p>
   <div class="row"><button class="btn" data-sheet="save">${ui.inQueue?(isLast?"Save and finish":"Save and next"):"Save changes"}</button>
   ${ui.inQueue?`<button class="btn quiet" data-sheet="skip">${isLast?"Finish later":"Skip"}</button>`:`<button class="btn ghost" data-sheet="style" ${d.needsTags?"disabled":""}>Style this piece</button>`}</div>
@@ -1417,7 +1443,7 @@ async function sheetSave(){
   syncText();const d=ui.draft,cat=d.category;
   const miss=[!cat&&"category",cat&&NEEDS_TYPE.has(cat)&&!d.type&&"type",!d.color&&"main colour",cat&&!NO_OCCASION.has(cat)&&!(d.formality||[]).length&&"occasion",cat&&NEEDS_WARMTH.has(cat)&&d.warmth==null&&"warmth"].filter(Boolean);
   if(miss.length){const e=$("#d-err");e.textContent="Still needed: "+miss.join(", ")+".";e.hidden=false;e.scrollIntoView({block:"center"});return}
-  const keep=new Set([...(LAYOUT[cat]||[]),"color","type","warmth","formality","season","brand","desc","noLayer","qty","status","price","wearsPerWash","washedAt"]);
+  const keep=new Set([...(LAYOUT[cat]||[]),"color","type","warmth","formality","season","brand","desc","noLayer","qty","status","inWash","price","wearsPerWash","washedAt"]);
   const clean={v:3,photo:d.photo,addedAt:d.addedAt,category:cat};
   for(const k of keep)if(d[k]!==undefined&&d[k]!==null&&d[k]!==""&&!(Array.isArray(d[k])&&!d[k].length&&MULTI_FIELDS.includes(k)))clean[k]=d[k];
   if(clean.colors2)clean.colors2=clean.colors2.filter(c=>c!==clean.color);
@@ -1427,7 +1453,9 @@ async function sheetSave(){
   const typed=d.nameInput;
   clean.name=typed&&typed!==auto?typed:auto;
   clean.autoName=auto;clean.needsTags=false;clean.needsReview=false;
-  const prev=S.items.get(ui.draftId);if(prev&&prev.status==="In laundry"&&clean.status==="In closet")clean.washedAt=today();
+  clean.inWash=Math.min(clean.qty||1,Math.max(0,d.inWash||0));
+  if(d.status==="At tailor"){clean.status="At tailor";clean.inWash=0}else{clean.status=clean.inWash>=(clean.qty||1)?"In laundry":"In closet"}
+  const prev=S.items.get(ui.draftId);if(prev&&(prev.inWash||0)>clean.inWash)clean.washedAt=today();
   try{await Store.put("items",ui.draftId,clean)}catch(e){return}
   if(ui.inQueue)sheetNext();else{$("#dlg").close();ui.draft=null;render();toast("Saved")}
 }
@@ -1453,6 +1481,10 @@ $("#dlgBody").addEventListener("click",async e=>{
   }
   const wp=e.target.closest("[data-wp]");
   if(wp){const v=wp.dataset.wp;d.wearsPerWash=v===""?"":+v;wp.parentElement.querySelectorAll("[data-wp]").forEach(x=>x.setAttribute("aria-pressed",String(x===wp)));return}
+  const w1=e.target.closest("[data-wash1]"),ws=e.target.closest("[data-washstep]"),tl=e.target.closest("[data-tailor]");
+  if(w1){const prevW=d.inWash||0;d.inWash=(w1.dataset.wash1==="In laundry")?1:0;if((d.inWash||0)<prevW)d.washedAt=today();d.status=d.inWash?"In laundry":"In closet";rerenderSheet();return}
+  if(ws){const q=qtyOf(d);const prevW=d.inWash||0;d.inWash=Math.max(0,Math.min(q,prevW+ +ws.dataset.washstep));if(d.inWash<prevW)d.washedAt=today();d.status=d.inWash>=q?"In laundry":"In closet";rerenderSheet();return}
+  if(tl){d.status=d.status==="At tailor"?"In closet":"At tailor";if(d.status==="At tailor")d.inWash=0;rerenderSheet();return}
   if(m){const k=m.dataset.m,v=m.dataset.v;const cur=arr(d[k]);d[k]=cur.includes(v)?cur.filter(x=>x!==v):[...cur,v];m.setAttribute("aria-pressed",String(d[k].includes(v)));return}
   if(!a)return;
   const act=a.dataset.sheet;
@@ -1460,7 +1492,6 @@ $("#dlgBody").addEventListener("click",async e=>{
     syncText();const text=d.desc||"";if(!text.trim()){toast("Paste a description first");return}
     const n=applyParsed(d,parseDesc(text));rerenderSheet();toast(n?`Filled ${n} ${n===1?"tag":"tags"}. Check them below.`:"Nothing new found in that text");
   }
-  if(act==="washed"){const it=S.items.get(ui.draftId);if(it){await Store.put("items",it.id,{...it,washedAt:today(),status:"In closet"});d.washedAt=today();d.status="In closet";rerenderSheet();render();toast("Marked as washed")}return}
   if(act==="photo"){syncText();$("#photoIn").click();return}
   if(act==="dup"){
     const src=S.items.get(ui.draftId);if(!src)return;
@@ -1803,7 +1834,7 @@ function renderTrip(t){
       if(it.category!==cat){cat=it.category;h+=`<p class="packcat">${esc(cat)}</p>`}
       const on=t.packed&&t.packed[it.id];
       const travelOnly=t.days.every(d=>!(t.outfits[d.date]||[]).some(o=>o.itemIds.includes(it.id)&&o.occasion!=="Travel"));
-      h+=`<button class="packrow${on?" on":""}" data-act="t-pack" data-id="${it.id}" aria-pressed="${!!on}"><span class="box">${on?"✓":""}</span><img src="${it.photo}" alt=""><span class="nm">${esc(it.name)}${it.qty>1?` <span class="qty">×${it.qty}</span>`:""}<small>${n} ${n===1?"outfit":"outfits"}${travelOnly?", wear it while travelling":""}${!available(it)?`, currently ${esc((it.status||"").toLowerCase())}`:""}</small></span></button>`;
+      h+=`<button class="packrow${on?" on":""}" data-act="t-pack" data-id="${it.id}" aria-pressed="${!!on}"><span class="box">${on?"✓":""}</span><img src="${it.photo}" alt=""><span class="nm">${esc(it.name)}${it.qty>1?` <span class="qty">×${it.qty}</span>`:""}<small>${n} ${n===1?"outfit":"outfits"}${travelOnly?", wear it while travelling":""}${laundryLabel(it)?`, ${esc(laundryLabel(it).toLowerCase())}`:""}</small></span></button>`;
     }
     h+=`<p class="packcat">Basics</p>`;
     extras.forEach(x=>{const on=t.checks&&t.checks[x.key];h+=`<button class="packrow${on?" on":""}" data-act="t-check" data-v="${esc(x.key)}" aria-pressed="${!!on}"><span class="box">${on?"✓":""}</span>${x.item?`<img src="${x.item.photo}" alt="">`:""}<span class="nm">${esc(x.label)}<small>${esc(x.hint)}</small></span></button>`});
@@ -1819,7 +1850,7 @@ function renderTrip(t){
 }
 async function tripBackHome(t){
   let n=0;
-  for(const {it} of packList(t)){if(isFinite(wearLimit(it))&&available(it)){await Store.put("items",it.id,{...it,status:"In laundry"});n++}}
+  for(const {it,n:used} of packList(t)){if(isFinite(wearLimit(it))){const add=Math.min(qtyOf(it)-inWash(it),Math.max(1,used));if(add>0){await moveToWash(it,add);n++}}}
   t.done=true;await Store.put("trips",t.id,t);render();toast(n?`${n} ${n===1?"piece":"pieces"} moved to the laundry`:"Nothing needed washing");
 }
 
@@ -1959,7 +1990,7 @@ async function applySlot(newId){
 /* ================= bulk edit ================= */
 function openBulk(){
   const ids=[...ui.sel].filter(id=>S.items.has(id));if(!ids.length)return;
-  ui.bulk={ids,sets:{formality:{},season:{},material:{}},status:"",warmth:null,brand:"",wears:null,washed:false};
+  ui.bulk={ids,sets:{formality:{},season:{},material:{}},laundry:"",warmth:null,brand:"",wears:null};
   renderBulk();if(!$("#dlg").open)$("#dlg").showModal();$("#dlgBody").scrollTop=0;
 }
 function triChips(field,opts){
@@ -1981,7 +2012,7 @@ function renderBulk(){
   <div class="field"><span>Only wear in</span><div class="chips wrap">${triChips("season",SEASONS)}</div></div>
   <div class="field"><span>Material</span><div class="chips wrap">${triChips("material",MATERIALS)}</div></div>
   <div class="field"><span>Warmth (leave unselected to keep each piece's own)</span><div class="chips wrap">${WARMTH.map((v,i)=>`<button type="button" class="chip" data-bw="${i}" aria-pressed="${b.warmth===i}">${v}</button>`).join("")}</div></div>
-  <div class="field"><span>Status</span><div class="chips wrap">${["In closet","In laundry","At tailor"].map(v=>`<button type="button" class="chip" data-bs="${v}" aria-pressed="${b.status===v}">${v}</button>`).join("")}<button type="button" class="chip" data-bwash="1" aria-pressed="${b.washed}">Mark as washed</button></div></div>
+  <div class="field"><span>Laundry</span><div class="chips wrap">${[["","— leave as is —"],["wash","Send one to wash"],["clean","Mark all washed"],["tailor","At tailor"]].map(([v,l])=>`<button type="button" class="chip" data-blaundry="${v}" aria-pressed="${(b.laundry||"")===v}">${l}</button>`).join("")}</div></div>
   <div class="field"><span>Wears before washing (leave unselected to keep each piece's own)</span><div class="chips wrap">${[["d","Default"],["1","1"],["2","2"],["3","3"],["4","4"],["5","5"],["-1","No limit"]].map(([v,l])=>`<button type="button" class="chip" data-bwp="${v}" aria-pressed="${b.wears===v}">${l}</button>`).join("")}</div></div>
   <label class="field"><span>Brand (leave empty to keep each piece's own)</span><input type="text" id="b-brand" value="${esc(b.brand)}" maxlength="40" style="width:100%;margin-top:6px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);min-height:44px"></label>
   <div class="row"><button class="btn" data-bulk="save">Apply to ${its.length} ${its.length===1?"piece":"pieces"}</button><button class="btn quiet" data-bulk="close">Cancel</button></div>`;
@@ -1998,8 +2029,9 @@ async function saveBulk(){
       x[f]=cur;
     }
     if(b.warmth!=null&&NEEDS_WARMTH.has(x.category))x.warmth=b.warmth;
-    if(b.status){if(x.status==="In laundry"&&b.status==="In closet")x.washedAt=today();x.status=b.status}
-    if(b.washed){x.washedAt=today();if(x.status==="In laundry")x.status="In closet"}
+    if(b.laundry==="wash"){const q=qtyOf(x);x.inWash=Math.min(q,(x.inWash||0)+1);x.status=x.inWash>=q?"In laundry":"In closet"}
+    else if(b.laundry==="clean"){if((x.inWash||0)>0)x.washedAt=today();x.inWash=0;x.status="In closet"}
+    else if(b.laundry==="tailor"){x.status="At tailor";x.inWash=0}
     if(b.wears!=null)x.wearsPerWash=b.wears==="d"?"":+b.wears;
     if(b.brand)x.brand=b.brand;
     await Store.put("items",id,x);n++;
@@ -2008,12 +2040,11 @@ async function saveBulk(){
 }
 function bulkClick(e){
   const b=ui.bulk;
-  const t=e.target.closest("[data-bt]"),w=e.target.closest("[data-bw]"),s=e.target.closest("[data-bs]"),a=e.target.closest("[data-bulk]"),bwp=e.target.closest("[data-bwp]"),bwash=e.target.closest("[data-bwash]");
-  if(bwp||bwash){b.brand=($("#b-brand")?.value||"");if(bwp)b.wears=b.wears===bwp.dataset.bwp?null:bwp.dataset.bwp;if(bwash)b.washed=!b.washed;const y=$("#dlgBody").scrollTop;renderBulk();$("#dlgBody").scrollTop=y;return}
+  const t=e.target.closest("[data-bt]"),w=e.target.closest("[data-bw]"),a=e.target.closest("[data-bulk]"),bwp=e.target.closest("[data-bwp]"),bl=e.target.closest("[data-blaundry]");
+  if(bwp||bl){b.brand=($("#b-brand")?.value||"");if(bwp)b.wears=b.wears===bwp.dataset.bwp?null:bwp.dataset.bwp;if(bl)b.laundry=(b.laundry===bl.dataset.blaundry?"":bl.dataset.blaundry);const y=$("#dlgBody").scrollTop;renderBulk();$("#dlgBody").scrollTop=y;return}
   const keepBrand=()=>{b.brand=($("#b-brand")?.value||"")};
   if(t){const f=t.dataset.bt,v=t.dataset.v;const st=t.getAttribute("aria-pressed");b.sets[f][v]=st!=="true";keepBrand();const y=$("#dlgBody").scrollTop;renderBulk();$("#dlgBody").scrollTop=y;return}
   if(w){const i=+w.dataset.bw;b.warmth=b.warmth===i?null:i;keepBrand();const y=$("#dlgBody").scrollTop;renderBulk();$("#dlgBody").scrollTop=y;return}
-  if(s){b.status=b.status===s.dataset.bs?"":s.dataset.bs;keepBrand();const y=$("#dlgBody").scrollTop;renderBulk();$("#dlgBody").scrollTop=y;return}
   if(a&&a.dataset.bulk==="save")saveBulk();
   if(a&&a.dataset.bulk==="close"){ui.bulk=null;$("#dlg").close()}
 }
@@ -2072,9 +2103,9 @@ document.addEventListener("click",async e=>{
     case "t-del":{if(el.dataset.armed){await Store.remove("trips",ui.tripId);ui.tripId=null;render();toast("Trip deleted")}else{el.dataset.armed="1";el.textContent="Tap again to delete this trip"}break}
     case "t-wear":{const t=S.trips.get(ui.tripId);const o=t&&t.outfits[el.dataset.d]&&t.outfits[el.dataset.d][+el.dataset.i];if(o){const oid=await saveOutfit(o.itemIds,o.occasion+" outfit",o.why);await wearToday(o.itemIds,oid)}render();break}
     case "goto-filter":ui.tab="closet";ui.filter=v;render();scrollTo(0,0);break;
-    case "s-laundry":{const ids=[...ui.sel];const allOff=ids.every(i=>!available(S.items.get(i)||{}));
-      for(const i of ids){const it=S.items.get(i);if(it)await Store.put("items",i,{...it,status:allOff?"In closet":"In laundry",...(allOff&&it.status==="In laundry"?{washedAt:today()}:{})})}
-      toast(allOff?"Back in your closet":"Marked as in the laundry");ui.sel.clear();ui.selecting=false;render();break}
+    case "s-laundry":{const ids=[...ui.sel];const allFull=ids.every(i=>{const it=S.items.get(i)||{};return inWash(it)>=qtyOf(it)});
+      for(const i of ids){const it=S.items.get(i);if(it)await moveToWash(it,allFull?-qtyOf(it):1)}
+      toast(allFull?"Washed and back in your closet":"One of each sent to the wash");ui.sel.clear();ui.selecting=false;render();break}
     case "goto":ui.tab=v;render();break;
     case "mode":ui.mode=v;render();if(v==="quick")loadForecast(false);break;
     case "occ":ui.occasion=v;refreshIfStale();break;
