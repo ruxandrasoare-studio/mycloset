@@ -1174,10 +1174,26 @@ async function saveOutfit(ids,title,why){
   await Store.put("outfits",id,{title:title||`Outfit ${S.outfits.size+1}`,itemIds:ids,why:why||"",savedAt:Date.now()});
   return id;
 }
+const autoLaundryOn=()=>lsGet("closet-autolaundry")!=="off";
+async function autoLaundryAfterWear(ids){
+  if(!autoLaundryOn())return [];
+  const moved=[];
+  for(const id of ids){
+    const it=S.items.get(id);if(!it||it.needsTags)continue;
+    const lim=wearLimit(it);if(!isFinite(lim))continue;            // "No limit" pieces never auto-launder
+    if(it.status==="At tailor")continue;
+    // how many clean copies have hit their limit now?
+    const dueCopies=Math.min(cleanCount(it),Math.floor(wearsSince(it)/lim)) - inWash(it);
+    if(dueCopies>0){await moveToWash(it,Math.min(dueCopies,cleanCount(it)));moved.push(it.name)}
+  }
+  return moved;
+}
 async function wearToday(ids,outfitId){
   const d=today();
   await Store.put("log",d,{date:d,itemIds:ids,outfitId:outfitId||null,at:Date.now()});
-  toast("Logged as today's outfit");
+  const moved=await autoLaundryAfterWear(ids);
+  if(moved.length)toast(moved.length===1?`Logged. ${moved[0]} moved to the laundry.`:`Logged. ${moved.length} pieces moved to the laundry.`);
+  else toast("Logged as today's outfit");
 }
 function resultAt(ref){
   if(!ref)return null;const p=ref.split(":");
@@ -1283,7 +1299,11 @@ function renderCloset(){
 }
 function renderSettings(){
   const last=lsGet("closet-last-backup");
-  return `<section class="backup"><h2>Backup</h2>
+  const autoOn=autoLaundryOn();
+  return `<section class="backup"><h2>Laundry</h2>
+  <label class="toggle"><input type="checkbox" data-act="autolaundry" ${autoOn?"checked":""}> Move a piece to the laundry automatically when it reaches its wear limit</label>
+  <p class="sub" style="margin-top:4px">When on, wearing an outfit sends any piece that's hit its wears-before-washing limit straight to the wash. Pieces set to "No limit" are never moved.</p>
+  <h2 style="margin-top:28px">Backup</h2>
   <p class="sub">Your closet lives only on this phone. Export a backup every few weeks and keep it in Files, iCloud Drive, or your email.${last?` Last backup: ${ago(last)}.`:" No backup yet."}</p>
   <div class="row"><button class="btn ghost" data-act="export">Export backup</button><button class="btn quiet" data-act="import">Restore from file</button></div>
   ${ui.backupUrl?`<p class="note">If no file appeared, <a href="${ui.backupUrl.href}" download="${ui.backupUrl.name}">tap here to download the backup</a>. On iPhone, open it and choose Save to Files.</p>`:""}</section>`;
@@ -2191,6 +2211,7 @@ document.addEventListener("change",e=>{
     const val=e.target.value==="home"?"home":+e.target.value;day.travel[e.target.dataset.tsel]=val;if(day.travel.to!=="home")day.stop=day.travel.to;
     if(t.built)buildTrip(t,day.date);await Store.put("trips",t.id,t);render()})()}
   if(e.target.matches('[data-act="neglect"]'))ui.neglect=e.target.checked;
+  if(e.target.matches('[data-act="autolaundry"]')){lsSet("closet-autolaundry",e.target.checked?null:"off");toast(e.target.checked?"Auto-laundry on":"Auto-laundry off")}
   if(e.target.id==="file"){const files=[...e.target.files];e.target.value="";addFiles(files)}
   if(e.target.id==="photoIn"){const f=e.target.files[0];e.target.value="";if(f&&ui.draft){resizeImage(f).then(p=>{ui.draft.photo=p;rerenderSheet();toast("Photo changed. Save to keep it.")}).catch(()=>toast("That photo couldn't be read."))}}
   if(e.target.id==="restore"){const f=e.target.files[0];e.target.value="";if(f)importBackup(f)}
