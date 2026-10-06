@@ -298,6 +298,7 @@ const FIELDS={
   stretch:{label:"Stretch",opts:["None","Some","Stretchy"]},
   fit:{label:"Fit",opts:FITS},
   sleeves:{label:"Sleeves / straps",opts:SLEEVES},
+  outerSleeves:{label:"Sleeves",opts:["Long","3/4","Short","Sleeveless"]},
   neckline:{label:"Neckline",opts:NECKS},
   topLength:{label:"Length",opts:["Cropped","Waist","Hip","Long / tunic"]},
   dressLength:{label:"Length",opts:["Mini","Knee","Midi","Maxi"]},
@@ -318,7 +319,7 @@ const LAYOUT={
   Top:["sleeves","neckline","fit","topLength","material","stretch","pattern","sheer","colors2"],
   Dress:["sleeves","neckline","fit","dressLength","material","stretch","pattern","sheer","colors2"],
   Bottom:["silhouette","bottomLength","rise","fit","closure","material","stretch","pattern","sheer","colors2"],
-  Outerwear:["fit","outerLength","wornOpen","rainproof","material","pattern","colors2"],
+  Outerwear:["sleeves","fit","outerLength","wornOpen","rainproof","material","pattern","colors2"],
   Shoes:["heel","toe","material"],
   Legwear:["opacity","pattern"],
   Underlayer:["fit"],
@@ -389,7 +390,10 @@ async function migrate(){
   }
   // backfill per-copy laundry for every item, including already-migrated ones
   for(const it of S.items.values()){
-    if(it.inWash==null){const v=(it.status==="In laundry")?(it.qty||1):0;await Store.put("items",it.id,{...it,inWash:v})}
+    const patch={};
+    if(it.inWash==null)patch.inWash=(it.status==="In laundry")?(it.qty||1):0;
+    if(it.category==="Outerwear"&&!it.sleeves)patch.sleeves=(it.type==="Gilet")?"Sleeveless":"Long";
+    if(Object.keys(patch).length)await Store.put("items",it.id,{...it,...patch});
   }
   for(const it of S.items.values()){
     if(it.v===3)continue;
@@ -778,6 +782,12 @@ function suggest(){
     if(anchor&&anchor.category==="Legwear")o.push(anchor);
     tw=outfitWarmth(o);
     if((tw<minW&&!sporty)||tw>maxW)continue;
+    // Hard rule: never a long-sleeve cardigan/blazer over a long-sleeve top or dress, however it was added (anchor, forced, or auto).
+    {
+      const longTop=o.some(i=>(i.category==="Top"||i.category==="Dress")&&i.sleeves&&SLEEVE_RANK[i.sleeves]>=3.5);
+      const longMid=o.some(i=>i.category==="Outerwear"&&MID.has(i.type)&&i.sleeves&&SLEEVE_RANK[i.sleeves]>=3.5);
+      if(longTop&&longMid)continue;
+    }
     // shoes, bag, accessory
     const wearsTights=o.some(i=>i.category==="Legwear"&&i.type==="Tights");
     let shoeOpts=wearsTights?shoes.filter(s=>s.toe!=="Open"):shoes;
@@ -1433,7 +1443,9 @@ function renderSheet(){
   const pos=ui.inQueue?ui.queue.indexOf(id):-1;const isLast=ui.inQueue&&pos===ui.queue.length-1;
   const COLORNAMES=COLORS.map(c=>c[0]);
   const fieldHTML=f=>{
-    const def=FIELDS[f];
+    let def=FIELDS[f];
+    // outerwear uses a simpler sleeve set (no straps/strapless)
+    if(f==="sleeves"&&cat==="Outerwear")def=FIELDS.outerSleeves;
     const hint=def.multi?` <span class="hint-inline">(pick all that apply)</span>`:"";
     if(def.multi)return `<div class="field"><span>${def.label}${hint}</span><div class="chips wrap">${multi(f,def.colors?COLORNAMES:def.opts,d[f],def.colors)}</div></div>`;
     return `<div class="field"><span>${def.label}</span><div class="chips wrap">${single(f,def.opts,d[f])}</div></div>`;
