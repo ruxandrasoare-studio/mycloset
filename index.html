@@ -1380,8 +1380,7 @@ function renderOutfits(){
   });
   const hist=[...S.log.values()].filter(e=>e.date!==today()).sort((a,b)=>b.date.localeCompare(a.date));
   if(hist.length){
-    const total=hist.length+(S.log.get(today())?1:0);
-    h+=`<h2>History${total?` (${total})`:""}</h2>`;
+    h+=`<h2>History${hist.length?` (${hist.length})`:""}</h2>`;
     const limit=ui.historyAll?hist.length:14;
     let month="";
     hist.slice(0,limit).forEach(e=>{
