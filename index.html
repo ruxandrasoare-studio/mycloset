@@ -309,7 +309,7 @@ const FIELDS={
   sheer:{label:"Sheerness",opts:["Opaque","Semi-sheer","Sheer"]},
   outerLength:{label:"Length",opts:["Cropped","Hip","Mid-thigh","Long"]},
   wornOpen:{label:"Usually worn",opts:["Open","Closed","Either"]},
-  rainproof:{label:"Rainproof",opts:["Yes","No"]},
+  rainproof:{label:"Rain protection",opts:["Waterproof","Water-resistant","Not for rain"]},
   heel:{label:"Heel",opts:["Flat","Low","High"]},
   toe:{label:"Toe",opts:["Closed","Open"]},
   opacity:{label:"Opacity",opts:["Sheer","Opaque"]},
@@ -393,6 +393,8 @@ async function migrate(){
     const patch={};
     if(it.inWash==null)patch.inWash=(it.status==="In laundry")?(it.qty||1):0;
     if(it.category==="Outerwear"&&!it.sleeves)patch.sleeves=(it.type==="Gilet")?"Sleeveless":"Long";
+    if(it.rainproof==="Yes")patch.rainproof="Waterproof";
+    else if(it.rainproof==="No")patch.rainproof="Not for rain";
     if(Object.keys(patch).length)await Store.put("items",it.id,{...it,...patch});
   }
   for(const it of S.items.values()){
@@ -525,7 +527,7 @@ function parseDesc(text){
   r.rise=first([[/high[- ](rise|waist)/,"High"],[/mid[- ](rise|waist)/,"Mid"],[/low[- ](rise|waist)/,"Low"]]);
   r.closure=all([[/elastic(ated)? waist/,"Elastic"],[/drawstring/,"Drawstring"],[/wrap|tie[- ]waist/,"Wrap / tie"],[/zip/,"Zip"],[/button|fly/,"Buttons"]]);
   r.silhouette=first([[/wide[- ]leg|palazzo/,"Wide leg"],[/straight[- ](leg|fit)/,"Straight"],[/skinny|slim[- ]leg/,"Slim / skinny"],[/flare|bootcut|boot[- ]cut/,"Flared / bootcut"],[/tapered/,"Tapered"],[/barrel|balloon/,"Barrel"],[/a[- ]line/,"A-line"],[/pencil/,"Pencil"],[/pleat/,"Pleated"],[/wrap/,"Wrap"],[/bias|slip skirt/,"Slip / bias"]]);
-  r.rainproof=has(/waterproof|water[- ]resistant|water[- ]repellent|rain/)?"Yes":undefined;
+  r.rainproof=has(/waterproof|gore[- ]?tex|rain(coat|wear| jacket)/)?"Waterproof":has(/water[- ]resistant|water[- ]repellent|showerproof|dwr/)?"Water-resistant":undefined;
   r.heel=first([[/block heel|kitten|low heel/,"Low"],[/stiletto|high heel|\bheels?\b/,"High"],[/\bflat/,"Flat"]]);
   r.toe=first([[/open[- ]toe|peep[- ]toe|sandal|slide/,"Open"],[/closed[- ]toe|pointed toe|round toe|almond toe/,"Closed"]]);
   const den=L.match(/(\d+)\s?den/);r.opacity=den?(+den[1]>=40?"Opaque":"Sheer"):first([[/opaque/,"Opaque"],[/sheer/,"Sheer"]]);
@@ -726,7 +728,11 @@ function suggest(){
     const addOuter=required=>{
       let cand=outers.filter(m=>sportOK(m)&&outfitWarmth([...o,m])<=maxW);if(!cand.length&&required&&!sporty)cand=outers;
       if(isCold&&cand.some(m=>W(m)>=2))cand=cand.filter(m=>W(m)>=2);
-      if(ui.rain&&cand.some(m=>m.rainproof==="Yes"))cand=cand.filter(m=>m.rainproof==="Yes");
+      if(ui.rain){
+        const wp=cand.filter(m=>m.rainproof==="Waterproof");
+        const okRain=cand.filter(m=>m.rainproof==="Waterproof"||m.rainproof==="Water-resistant");
+        if(ui.rainHeavy&&wp.length)cand=wp; else if(okRain.length)cand=okRain;
+      }
       if(cand.length){o.push(choose(cand));tw=outfitWarmth(o)}
     };
     const topSleeve=()=>{const rs=o.filter(i=>i.category==="Top"||i.category==="Dress").map(i=>i.sleeves?SLEEVE_RANK[i.sleeves]:0);return rs.length?Math.max(...rs):0};
@@ -964,7 +970,11 @@ function scoreOutfit(o,ids,s,ctx){
     if(outer.outerLength==="Long"&&(len==="Mini"||len==="Shorts"))score+=.5;
     if(outer.outerLength==="Cropped"&&len==="Maxi")score-=.5;
     if(outer.outerLength==="Cropped"&&bottom&&bottom.rise==="High")score+=.5;
-    if(ui.rain&&outer.rainproof==="Yes"){score+=1.5;tips.push(`The ${outer.name} handles the rain.`)}
+    if(ui.rain){
+      if(outer.rainproof==="Waterproof"){score+=ui.rainHeavy?3:1.5;tips.push(`The ${outer.name} keeps you dry in the rain.`)}
+      else if(outer.rainproof==="Water-resistant"){score+=ui.rainHeavy?-1:1;tips.push(ui.rainHeavy?`The ${outer.name} only handles light rain, so take an umbrella.`:`The ${outer.name} is fine for light rain.`)}
+      else if(ui.rainHeavy){score-=2;tips.push(`The ${outer.name} isn't made for rain, so take an umbrella or a waterproof layer.`)}
+    }
     if(outer.wornOpen==="Closed"&&layered)score-=.5;
   }
   // texture
@@ -1007,7 +1017,7 @@ function scoreOutfit(o,ids,s,ctx){
   const title=cap(tn.join(" + "));
   return {o,ids,s,score,title:title.length>52?title.slice(0,50)+"…":title,why:why.join(" "),tips};
 }
-const briefKey=()=>[ui.occasion,ui.weather,ui.rain,ui.anchor||"",ui.layerDown?"L":""].join("|");
+const briefKey=()=>[ui.occasion,ui.weather,ui.rain,ui.rainHeavy?"H":"",ui.anchor||"",ui.layerDown?"L":""].join("|");
 function refreshIfStale(){if(ui.results.length&&ui.resultsKey!==briefKey())generate();else render()}
 function occasionGap(occ,weather){
   const avail=items().filter(i=>!i.needsTags&&available(i));
@@ -1071,9 +1081,10 @@ function forecastFor(data,key){
   // A "swing" day spans more than one weather band and a real temperature gap.
   const swing=loBand!==hiBand&&(hi-lo)>=5;
   let rain=0,wet=false;
-  if(data.precipitation_probability){const probs=idx.map(i=>data.precipitation_probability[i]).filter(x=>x!=null);rain=probs.length?Math.max(...probs):0;wet=rain>=50}
-  else if(data.precipitation){const wetH=idx.filter(i=>(data.precipitation[i]||0)>=0.2).length;wet=wetH>=2;rain=wet?60:10}
-  return {feels:Math.round(avg),dressTemp,lo:Math.round(lo),hi:Math.round(hi),rain,weather:dressBand,loBand,hiBand,swing,wet,hist:!!data.shift};
+  let heavy=false;
+  if(data.precipitation_probability){const probs=idx.map(i=>data.precipitation_probability[i]).filter(x=>x!=null);rain=probs.length?Math.max(...probs):0;wet=rain>=40;heavy=rain>=70}
+  else if(data.precipitation){const amt=idx.map(i=>data.precipitation[i]||0);const wetH=amt.filter(x=>x>=0.2).length;const peak=Math.max(0,...amt);wet=wetH>=2;heavy=peak>=2.5||wetH>=5;rain=wet?(heavy?80:55):10}
+  return {feels:Math.round(avg),dressTemp,lo:Math.round(lo),hi:Math.round(hi),rain,weather:dressBand,loBand,hiBand,swing,wet,heavy,hist:!!data.shift};
 }
 function dayLabel(key){
   const t=today(),tm=dateForOffset(1);
@@ -1081,7 +1092,7 @@ function dayLabel(key){
   return new Date(dayMs(key)).toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"});
 }
 function dayForecast(){return forecastFor(FC.data,dateForOffset(ui.fcOff||0))}
-function applyForecast(){if(ui.weatherManual){ui.layerDown=false;return}const f=dayForecast();if(f){ui.weather=f.weather;ui.rain=f.wet;ui.layerDown=!!f.swing}if(ui.ready&&ui.results.length&&ui.resultsKey!==briefKey()){ui.err="";ui.results=suggest();ui.resultsKey=briefKey()}}
+function applyForecast(){if(ui.weatherManual){ui.layerDown=false;return}const f=dayForecast();if(f){ui.weather=f.weather;ui.rain=f.wet;ui.rainHeavy=!!f.heavy;ui.layerDown=!!f.swing}if(ui.ready&&ui.results.length&&ui.resultsKey!==briefKey()){ui.err="";ui.results=suggest();ui.resultsKey=briefKey()}}
 function forecastHTML(){
   const day=dayLabel(dateForOffset(ui.fcOff||0));
   const toggle=`<div class="chips" style="padding-top:0;margin:0 0 8px;padding-left:0;padding-right:0">${[0,1,2,3,4,5,6].map(n=>`<button class="chip" data-act="fcday" data-v="${n}" aria-pressed="${(ui.fcOff||0)===n}">${esc(n<2?(n?"Tomorrow":"Today"):new Date(dayMs(dateForOffset(n))).toLocaleDateString(undefined,{weekday:"short",day:"numeric"}))}</button>`).join("")}</div>`;
@@ -1112,7 +1123,7 @@ function closetForAI(){
       it.fit&&"fit: "+it.fit,it.sleeves&&"sleeves: "+it.sleeves,it.neckline&&"neck: "+it.neckline,
       (it.topLength||it.dressLength||it.bottomLength||it.outerLength)&&"length: "+(it.topLength||it.dressLength||it.bottomLength||it.outerLength),
       it.silhouette&&"shape: "+it.silhouette,it.rise&&"waist: "+it.rise,arr(it.closure).length&&"closure: "+arr(it.closure).join("+"),it.sheer&&it.sheer!=="Opaque"&&"sheer: "+it.sheer,
-      it.wornOpen&&"worn: "+it.wornOpen,it.rainproof==="Yes"&&"rainproof",it.heel&&"heel: "+it.heel,it.toe&&"toe: "+it.toe,it.opacity&&"opacity: "+it.opacity,
+      it.wornOpen&&"worn: "+it.wornOpen,it.rainproof&&it.rainproof!=="Not for rain"&&("rain: "+it.rainproof.toLowerCase()),it.heel&&"heel: "+it.heel,it.toe&&"toe: "+it.toe,it.opacity&&"opacity: "+it.opacity,
       it.bagSize&&"size: "+it.bagSize,"occasions: "+((it.formality||[]).join("/")||"any"),it.season&&it.season.length&&"only in: "+it.season.join("/"),
       it.noLayer&&"never layer",it.qty>1&&"owns "+it.qty,s?`worn ${s.count}x, last ${ago(s.last)}`:"never logged",
       isNeglected(it,s)&&"NEGLECTED",it.desc&&"shop description: "+it.desc.slice(0,260).replace(/\s+/g," ")].filter(Boolean);
@@ -1958,7 +1969,7 @@ function renderStats(){
 function statRow(i,txt){return `<div class="packrow static"><img src="${i.photo}" alt=""><span class="nm">${esc(i.name)}<small>${esc(txt)}</small></span></div>`}
 function findGaps(all){
   const g=[];const outer=all.filter(i=>i.category==="Outerwear");
-  if(!outer.some(i=>i.rainproof==="Yes"&&!MID.has(i.type)))g.push("No rainproof jacket or trench tagged, so rainy days can't get a proper outer layer.");
+  if(!outer.some(i=>(i.rainproof==="Waterproof"||i.rainproof==="Water-resistant")&&!MID.has(i.type)))g.push("No rain-ready coat or jacket tagged, so rainy days can't get a proper outer layer.");
   if(!outer.some(i=>!MID.has(i.type)&&W(i)>=3))g.push("No warm coat (warmth: Warm) for cold days.");
   if(!outer.some(i=>MID.has(i.type)))g.push("No cardigan, blazer or gilet, which bare arms in mild weather rely on.");
   if(all.some(i=>i.sheer==="Sheer"||i.sheer==="Semi-sheer")&&!all.some(i=>i.category==="Underlayer"))g.push("You have sheer pieces but no underlayers (slip, bike shorts, camisole) tagged.");
