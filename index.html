@@ -728,9 +728,9 @@ function suggest(){
     const topSleeve=()=>{const rs=o.filter(i=>i.category==="Top"||i.category==="Dress").map(i=>i.sleeves?SLEEVE_RANK[i.sleeves]:0);return rs.length?Math.max(...rs):0};
     const addMid=required=>{
       let cand=mids.filter(m=>sportOK(m)&&outfitWarmth([...o,m])<=maxW);
-      // Mild or warmer: don't put a long/three-quarter-sleeve cardigan or blazer over an already long-sleeved top (redundant and too warm).
-      if(!chilly&&topSleeve()>=3.5)cand=cand.filter(m=>!m.sleeves||SLEEVE_RANK[m.sleeves]<=2);
-      if(!cand.length&&required&&!sporty)cand=mids;
+      // Never put a long/three-quarter-sleeve cardigan or blazer over an already long-sleeved top (redundant). A sleeveless layer (gilet) is fine.
+      if(topSleeve()>=3.5)cand=cand.filter(m=>!m.sleeves||SLEEVE_RANK[m.sleeves]<=2);
+      if(!cand.length&&required&&!sporty)cand=mids.filter(m=>topSleeve()<3.5||!m.sleeves||SLEEVE_RANK[m.sleeves]<=2);
       if(cand.length){o.push(choose(cand));tw=outfitWarmth(o)}
     };
     if(forcedOuter){o.push(forcedOuter);tw=outfitWarmth(o)}
