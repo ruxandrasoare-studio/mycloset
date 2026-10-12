@@ -1038,6 +1038,63 @@ function scoreOutfit(o,ids,s,ctx){
   const sm=mats.find(m=>SMOOTH.has(m)),tx=mats.find(m=>TEXTURED.has(m));
   if(sm&&tx){score+=.5;why.push(`${sm} against ${tx.toLowerCase()} adds texture contrast.`)}
   if(layered){score+=.8;why.push(...notes)}
+  // --- stylist combos: proven pairings get a nudge (never a block) ---
+  {
+    const sShoe=o.find(i=>i.category==="Shoes");
+    const sBottom=o.find(i=>i.category==="Bottom");
+    const sDress=o.find(i=>i.category==="Dress");
+    const sOuter=o.find(i=>i.category==="Outerwear");
+    const sKnit=o.find(i=>i.category==="Top"&&(i.type==="Knit / sweater"||i.type==="Sweater vest"));
+    const sShirtTee=o.find(i=>i.category==="Top"&&["Shirt / blouse","T-shirt / top"].includes(i.type));
+    const casualOK=["Casual","Holiday","Travel","Going out"].includes(ui.occasion);
+    const smartOK=["Office","Business travel","Elegant","Going out"].includes(ui.occasion);
+    const stripeTop=o.find(i=>i.category==="Top"&&arr(i.pattern).includes("Stripes"));
+    let combo=null;
+    if(sShoe){
+      const st=sShoe.type, isJeans=sBottom&&sBottom.type==="Jeans", isSkirt=sBottom&&sBottom.type==="Skirt";
+      const isTailored=sBottom&&sBottom.type==="Trousers", midiShort=sBottom&&["Midi","Knee","Mini","Cropped / ankle"].includes(sBottom.bottomLength);
+      const dressMidiShort=sDress&&["Midi","Knee","Mini"].includes(sDress.dressLength);
+      // LOAFERS — the owner's signature, weighted highest
+      if(st==="Loafers"){
+        if(isJeans){score+=2.2;combo="Loafers with jeans — a go-to that always reads put-together."}
+        else if(isSkirt){score+=2.2;combo="Loafers with a skirt — polished and a little preppy, your signature."}
+        else if(sDress){score+=2.2;combo="Loafers with a dress — easy, elevated, very you."}
+        else if(isTailored){score+=1.4;combo="Loafers with tailored trousers — a clean, polished pairing."}
+      }
+      else if((st==="Sneakers")&&casualOK){
+        const wide=sBottom&&(["Wide leg","Barrel"].includes(sBottom.silhouette)||sBottom.fit==="Oversized");
+        if(wide){score+=1.6;combo="Trainers under wide-leg trousers — dresses the tailoring down nicely."}
+        else if(isJeans){score+=1.2;combo="Trainers with jeans — relaxed and easy."}
+        else if(isSkirt&&midiShort){score+=1.2;combo="Trainers with a midi skirt — a modern, sporty-chic mix."}
+        else if(dressMidiShort){score+=1;combo="Trainers under the dress — an easy, casual edge."}
+      }
+      else if((st==="Heels")&&smartOK){
+        if(isTailored&&["Slim / skinny","Pencil","Tapered","Straight"].includes(sBottom.silhouette)){score+=1.4;combo="Pointed heels with tapered trousers — lengthening and sharp."}
+        else if(isSkirt&&sBottom.silhouette==="Pencil"){score+=1.4;combo="Heels with a pencil skirt — classic and sharp."}
+        else if(sDress){score+=1.2;combo="Heels with the dress — the elevated choice."}
+      }
+      else if(st==="Boots"){
+        if(isJeans||(isTailored&&["Straight","Slim / skinny"].includes(sBottom.silhouette))){score+=1.2;combo="Boots with jeans — grounded and seasonal."}
+        else if((isSkirt||sDress)&&(ui.weather==="Cool"||ui.weather==="Cold")){score+=1.2;combo="Boots with a skirt — a cold-weather staple."}
+      }
+      else if(st==="Flats"){
+        if(isJeans){score+=1;combo="Ballet flats with jeans — soft and easy."}
+      }
+      else if(st==="Sandals"&&(ui.weather==="Hot"||ui.weather==="Warm")){
+        if((isSkirt||sDress)&&(midiShort||dressMidiShort||(sDress&&sDress.dressLength==="Maxi"))){score+=1;combo="Sandals with a skirt or dress — summer-easy."}
+      }
+    }
+    // garment formulas
+    if(sOuter){
+      if(sOuter.type==="Blazer"&&sBottom&&sBottom.type==="Jeans"){score+=1.6;combo=combo||"Blazer over jeans — the smart-casual classic.";why.push("Blazer over jeans dresses the denim up.")}
+      if(sOuter.type==="Trench"&&(sDress||(sBottom&&sBottom.type==="Jeans"))){score+=1;combo=combo||"Trench on top — an effortless finish."}
+      if(sOuter.type==="Cardigan"&&sBottom&&sBottom.type==="Skirt"){score+=.8;combo=combo||"Cardigan with a skirt — soft and tidy."}
+      if(sOuter.type==="Jacket"&&(sOuter.color==="Denim")&&sDress){score+=1;combo=combo||"Denim jacket over the dress — casual and easy."}
+    }
+    if(sKnit&&sBottom&&sBottom.type==="Trousers"){score+=.8;combo=combo||"Knit with tailored trousers — polished workwear."}
+    if(stripeTop&&sBottom&&sBottom.type==="Jeans"){score+=.8;combo=combo||"A striped top with jeans — the Breton classic."}
+    if(combo)why.push(combo);
+  }
   // neglect, recency, randomness
   const negs=o.filter(neg);
   if(ui.neglect&&negs.length){
