@@ -826,7 +826,7 @@ function suggest(){
   const picked=[],used=new Set();
   const mainOf=x=>x.o.filter(i=>MAIN.has(i.category)&&i.category!=="Outerwear"&&!(ui.occasion==="Sport"&&isSportBra(i))).map(i=>i.id);
   // what kind of base an outfit uses, to spread skirts, trousers and dresses across suggestions
-  const baseKind=c=>{if(c.o.some(i=>i.category==="Dress"))return "dress";const b=c.o.find(i=>i.category==="Bottom");if(b)return b.type==="Skirt"?"skirt":b.type==="Shorts"?"shorts":"trousers";return "other"};
+  const baseKind=c=>{if(c.o.some(i=>i.category==="Dress"))return "dress";const b=c.o.find(i=>i.category==="Bottom");if(b)return b.type==="Skirt"?"skirt":b.type==="Shorts"?"shorts":b.type==="Jeans"?"jeans":b.type==="Leggings"?"leggings":"trousers";return "other"};
   const kindsAvail=new Set(cands.map(baseKind));
   const perKindCap=Math.max(2,Math.ceil(N/Math.max(1,kindsAvail.size)));
   // Pass 1: variety — different base pieces, and a spread of base kinds when several exist.
