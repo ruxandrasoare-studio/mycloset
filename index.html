@@ -313,6 +313,7 @@ const FIELDS={
   heel:{label:"Heel",opts:["Flat","Low","High"]},
   toe:{label:"Toe",opts:["Closed","Open"]},
   opacity:{label:"Opacity",opts:["Sheer","Opaque"]},
+  sockHeight:{label:"Height",opts:["No-show","Ankle","Crew","Knee-high","Over-knee"]},
   bagSize:{label:"Size",opts:["Small","Medium","Large"]}
 };
 const LAYOUT={
@@ -321,7 +322,7 @@ const LAYOUT={
   Bottom:["silhouette","bottomLength","rise","fit","closure","material","stretch","pattern","sheer","colors2"],
   Outerwear:["sleeves","fit","outerLength","wornOpen","rainproof","material","pattern","colors2"],
   Shoes:["heel","toe","material"],
-  Legwear:["opacity","pattern"],
+  Legwear:["sockHeight","opacity","pattern"],
   Underlayer:["fit"],
   Bag:["bagSize","material"],
   Accessory:["material"],
@@ -394,6 +395,7 @@ async function migrate(){
     if(it.inWash==null)patch.inWash=(it.status==="In laundry")?(it.qty||1):0;
     if(it.category==="Outerwear"&&!it.sleeves)patch.sleeves=(it.type==="Gilet")?"Sleeveless":"Long";
     if(it.rainproof==="Yes")patch.rainproof="Waterproof";
+    if(it.category==="Legwear"&&it.type==="Socks"&&!it.sockHeight)patch.sockHeight="Crew";
     else if(it.rainproof==="No")patch.rainproof="Not for rain";
     if(Object.keys(patch).length)await Store.put("items",it.id,{...it,...patch});
   }
@@ -517,6 +519,7 @@ function parseDesc(text){
   const lenD=first([[/\bmaxi\b/,"Maxi"],[/\bmidi\b/,"Midi"],[/\bmini\b/,"Mini"],[/knee[- ]length/,"Knee"]]);
   r.dressLength=lenD;
   r.bottomLength=first([[/\bmaxi\b/,"Maxi"],[/\bmidi\b/,"Midi"],[/\bmini\b/,"Mini"],[/knee[- ]length/,"Knee"],[/cropped|ankle[- ]length|7\/8/,"Cropped / ankle"],[/full[- ]length/,"Full length"],[/\bshorts\b/,"Shorts"]]);
+  r.sockHeight=first([[/no[- ]show|invisible sock|trainer sock/,"No-show"],[/ankle sock/,"Ankle"],[/knee[- ]high|over[- ]the[- ]knee/,"Knee-high"],[/crew sock/,"Crew"]]);
   r.topLength=first([[/cropped|crop top/,"Cropped"],[/longline|tunic/,"Long / tunic"],[/hip[- ]length/,"Hip"],[/waist[- ]length/,"Waist"]]);
   r.outerLength=first([[/cropped/,"Cropped"],[/longline|long coat|maxi|ankle[- ]length|full[- ]length/,"Long"],[/mid[- ]thigh|knee[- ]length/,"Mid-thigh"],[/hip[- ]length/,"Hip"]]);
   r.neckline=first([[/square neck/,"Square"],[/sweetheart/,"Sweetheart"],[/v[- ]neck|plunge/,"V-neck"],[/scoop/,"Scoop"],[/crew[- ]?neck|round neck/,"Round"],[/boat neck|bateau/,"Boat"],[/turtle ?neck|mock neck|high neck|funnel neck|roll neck/,"High / turtleneck"],[/collar/,"Collar"],[/off[- ](the[- ])?shoulder|strapless|bandeau/,"Off-shoulder / strapless"]]);
@@ -801,7 +804,14 @@ function suggest(){
     if(anchor&&anchor.category==="Shoes")o.push(anchor);else if(shoeOpts.length)o.push(choose(shoeOpts));
     // socks: only with loafers, never with tights
     const shoe=o.find(i=>i.category==="Shoes");
-    if(shoe&&shoe.type==="Loafers"&&!wearsTights&&!(anchor&&anchor.type==="Socks")&&socks.length){const sk=choose(socks);o.push(sk);tips.push(`Show the ${sk.name} with the ${shoe.name}.`)}
+    const dr=o.find(i=>i.category==="Dress"),bo=o.find(i=>i.category==="Bottom");
+    const longHem=(dr&&dr.dressLength==="Maxi")||(bo&&(bo.bottomLength==="Maxi"||bo.bottomLength==="Full length"));
+    if(shoe&&shoe.type==="Loafers"&&!wearsTights&&!(anchor&&anchor.type==="Socks")&&socks.length){
+      // petite: don't pair covering crew/knee socks with a maxi (the "modest column") — prefer a short sock, or skip
+      let sel=socks;
+      if(heightBand()==="petite"&&longHem)sel=socks.filter(s=>["No-show","Ankle"].includes(s.sockHeight));
+      if(sel.length){const sk=choose(sel);o.push(sk);tips.push(`Show the ${sk.name} with the ${shoe.name}.`)}
+    }
     if(anchor&&anchor.category==="Bag")o.push(anchor);else if(bags.length&&Math.random()<.4)o.push(choose(bags));
     if(anchor&&anchor.category==="Accessory")o.push(anchor);else if(accs.length&&Math.random()<.3)o.push(choose(accs));
     if(anchor&&anchor.category==="Underlayer"&&!o.includes(anchor))o.push(anchor);
@@ -976,6 +986,52 @@ function scoreOutfit(o,ids,s,ctx){
       else if(ui.rainHeavy){score-=2;tips.push(`The ${outer.name} isn't made for rain, so take an umbrella or a waterproof layer.`)}
     }
     if(outer.wornOpen==="Closed"&&layered)score-=.5;
+  }
+  // --- height-band proportion rules ---
+  const band=heightBand();
+  const topMost=outerTop||dress;
+  const longBottom=(dress&&dress.dressLength==="Maxi")||(bottom&&(bottom.bottomLength==="Maxi"||bottom.bottomLength==="Full length"));
+  const sock=o.find(i=>i.category==="Legwear"&&i.type==="Socks");
+  const shoe=o.find(i=>i.category==="Shoes");
+  const neck=topMost&&topMost.neckline;
+  const highNeck=neck==="High / turtleneck"||neck==="Collar";
+  if(band==="petite"){
+    // favour high waists and a defined break
+    if(bottom&&bottom.rise==="High")score+=.8;
+    if(bottom&&bottom.rise==="Low"&&!(outerTop&&outerTop.topLength==="Cropped"))score-=.8;
+    // cropped / waist-length / fitted tops lengthen the leg
+    if(outerTop){
+      if(["Cropped","Waist"].includes(outerTop.topLength))score+=.8;
+      if(outerTop.topLength==="Long / tunic"&&!longBottom)score-=1;
+      if(outerTop.fit==="Oversized")score-=1;
+    }
+    // caution on maxi lengths and stacked volume
+    if(longBottom)score-=.6;
+    if(dress&&dress.dressLength==="Midi")score+=.3;      // midi tends to flatter petite more than maxi
+    if((bottom&&["Wide leg","Barrel"].includes(bottom.silhouette))&&topMost&&topMost.fit!=="Tight"&&topMost.fit!=="Fitted")score-=.8;
+    if(outer&&outer.outerLength==="Long"&&longBottom)score-=.8;   // long coat over maxi = one long column
+    // monochrome / tonal elongates — small extra nudge (colourRead already rewards; add a touch)
+    // THE MODEST COLUMN: long bottom + covered ankles (crew+ socks in closed shoes) + covered neck = no break
+    const coveredAnkle=sock&&["Crew","Knee-high","Over-knee"].includes(sock.sockHeight)&&shoe&&shoe.toe!=="Open";
+    if(longBottom&&coveredAnkle){
+      score-=3;
+      tips.push(`This reads very covered-up for your height: a maxi with crew socks and closed shoes leaves no break. Show some ankle (a mule or bare loafer) or switch to a midi.`);
+    }else if(longBottom&&highNeck&&coveredAnkle){
+      score-=2;
+    }
+    // crew socks + loafers are cute with a short hemline, steer them there
+    if(sock&&["Crew","Knee-high"].includes(sock.sockHeight)&&shoe&&shoe.toe!=="Open"){
+      const shortHem=(bottom&&["Mini","Shorts","Knee","Cropped / ankle"].includes(bottom.bottomLength))||(dress&&["Mini","Knee"].includes(dress.dressLength));
+      if(shortHem)score+=.6;         // the look works here
+    }
+  }else if(band==="tall"){
+    // length and volume are flattering; relax cautions and lean into long lines
+    if(longBottom)score+=.5;
+    if(outer&&outer.outerLength==="Long")score+=.4;
+    if(dress&&dress.dressLength==="Maxi")score+=.4;
+    // gentle warning on too-short: cropped top + low rise = large midriff gap
+    if(outerTop&&outerTop.topLength==="Cropped"&&bottom&&bottom.rise==="Low"){score-=1;tips.push(`A cropped top with a low rise can leave a lot of midriff on a taller frame — a high waist closes the gap.`)}
+    if(bottom&&bottom.bottomLength==="Cropped / ankle"&&!shoe)score-=.3;
   }
   // texture
   const mats=mains.flatMap(i=>arr(i.material));
@@ -1196,6 +1252,8 @@ async function saveOutfit(ids,title,why){
   return id;
 }
 const autoLaundryOn=()=>lsGet("closet-autolaundry")!=="off";
+const HEIGHT_BANDS=[["petite","Petite","under 160cm"],["regular","Regular","160\u2013175cm"],["tall","Tall","above 175cm"]];
+const heightBand=()=>lsGet("closet-height")||"petite";   // default Petite
 async function autoLaundryAfterWear(ids){
   if(!autoLaundryOn())return [];
   const moved=[];
@@ -1321,7 +1379,11 @@ function renderCloset(){
 function renderSettings(){
   const last=lsGet("closet-last-backup");
   const autoOn=autoLaundryOn();
-  return `<section class="backup"><h2>Laundry</h2>
+  const hb=heightBand();
+  return `<section class="backup"><h2>Your height</h2>
+  <p class="sub" style="margin-top:0 0 6px">Tunes the proportion rules. It never blocks a piece, just shifts what's suggested.</p>
+  <div class="chips wrap">${HEIGHT_BANDS.map(([v,l,cm])=>`<button class="chip" data-height="${v}" aria-pressed="${hb===v}">${l} \u00b7 ${cm}</button>`).join("")}</div>
+  <h2 style="margin-top:28px">Laundry</h2>
   <label class="toggle"><input type="checkbox" data-act="autolaundry" ${autoOn?"checked":""}> Move a piece to the laundry automatically when it reaches its wear limit</label>
   <p class="sub" style="margin-top:4px">When on, wearing an outfit sends any piece that's hit its wears-before-washing limit straight to the wash. Pieces set to "No limit" are never moved.</p>
   <h2 style="margin-top:28px">Backup</h2>
@@ -1456,6 +1518,7 @@ function renderSheet(){
     let def=FIELDS[f];
     // outerwear uses a simpler sleeve set (no straps/strapless)
     if(f==="sleeves"&&cat==="Outerwear")def=FIELDS.outerSleeves;
+    if(f==="sockHeight"&&d.type!=="Socks")return "";
     const hint=def.multi?` <span class="hint-inline">(pick all that apply)</span>`:"";
     if(def.multi)return `<div class="field"><span>${def.label}${hint}</span><div class="chips wrap">${multi(f,def.colors?COLORNAMES:def.opts,d[f],def.colors)}</div></div>`;
     return `<div class="field"><span>${def.label}</span><div class="chips wrap">${single(f,def.opts,d[f])}</div></div>`;
@@ -2133,6 +2196,8 @@ function bulkClick(e){
 document.addEventListener("click",async e=>{
   const tabBtn=e.target.closest("#tabs button");
   if(tabBtn){ui.tab=tabBtn.dataset.tab;render();scrollTo(0,0);if(ui.tab==="ideas"||(ui.tab==="plan"&&!ui.tripId&&!ui.newTrip))loadForecast(false);return}
+  const hbtn=e.target.closest("[data-height]");
+  if(hbtn){lsSet("closet-height",hbtn.dataset.height);const names={petite:"Petite",regular:"Regular",tall:"Tall"};toast(names[hbtn.dataset.height]+" proportions on");if(ui.results.length){ui.results=suggest();ui.resultsKey=briefKey&&briefKey()}render();return}
   const el=e.target.closest("[data-act]");if(!el||el.closest("#dlg"))return;
   const act=el.dataset.act,v=el.dataset.v,id=el.dataset.id;
   switch(act){
