@@ -643,7 +643,7 @@ function seenSets(){
 }
 function suggest(){
   const w=wearStats();
-  const ready=items().filter(i=>!i.needsTags&&i.category!=="Sleepwear"&&(ui.tripMode||available(i))&&(!ui.tripUses||(ui.tripUses.get(i.id)||0)<capacity(i)));
+  const ready=items().filter(i=>!i.needsTags&&i.category!=="Sleepwear"&&available(i)&&(!ui.tripUses||(ui.tripUses.get(i.id)||0)<capacity(i)));
   if(ui.occasion==="Beach")return suggestBeach(ready,w);
   const anchor=ui.anchor&&S.items.get(ui.anchor);
   const pool=ready.filter(i=>(fitsOccasion(i)&&fitsWeather(i))||(anchor&&i.id===anchor.id));
@@ -2130,12 +2130,16 @@ function candidatesFor(outfit,slotId,ctx){
     }).sort((a,b)=>b.s-a.s);
 }
 function addableCategories(outfit){
-  const have=new Set(outfit.itemIds.map(id=>S.items.get(id)).filter(Boolean).map(i=>i.category));
+  const its=outfit.itemIds.map(id=>S.items.get(id)).filter(Boolean);
+  const have=new Set(its.map(i=>i.category));
+  const topCount=its.filter(i=>i.category==="Top").length;
   const opts=[];
   if(!have.has("Dress")){if(!have.has("Top"))opts.push("Top");if(!have.has("Bottom"))opts.push("Bottom");}
   if(!have.has("Top")&&!have.has("Bottom")&&!have.has("Dress"))opts.push("Dress");
+  // allow one extra top as a layer (e.g. a tank under a long-sleeve, or a top under a dress)
+  if((have.has("Top")||have.has("Dress"))&&topCount<2)opts.push("Top (layer)");
   for(const c of ["Outerwear","Shoes","Legwear","Bag","Accessory","Underlayer"])if(!have.has(c))opts.push(c);
-  return opts.filter(c=>items().some(i=>!i.needsTags&&available(i)&&i.category===c));
+  return opts.filter(c=>c==="Top (layer)"||items().some(i=>!i.needsTags&&available(i)&&i.category===c));
 }
 function slotCtx(ref){
   const r=resultAt(ref);
@@ -2165,9 +2169,18 @@ function renderSlot(){
   }else{
     h+=`<h3>Add a piece</h3>`;
     if(st.cats&&st.cats.length>1)h+=`<div class="chips wrap">${st.cats.map(c=>`<button class="chip" data-slotcat="${c}" aria-pressed="${st.addCat===c}">${c}</button>`).join("")}</div>`;
+    if(st.addCat==="Top (layer)")h+=`<p class="note">Add a second top to layer — a tank or cami under a long-sleeve, for example.</p>`;
     const fake={itemIds:o.itemIds};
     const occ=ctx.occasion;const fitsO=i=>NO_OCCASION.has(i.category)||occ==="Any"||(i.formality||[]).includes(occ);
-    cands=items().filter(i=>!i.needsTags&&available(i)&&i.category===st.addCat&&fitsO(i)).map(i=>({i,s:(isNeglected(i,wearStats().get(i.id))?1:0)+Math.random(),warn:""})).sort((a,b)=>b.s-a.s);
+    const layerMode=st.addCat==="Top (layer)";
+    const cat=layerMode?"Top":st.addCat;
+    const already=new Set(o.itemIds);
+    cands=items().filter(i=>!i.needsTags&&available(i)&&i.category===cat&&!already.has(i.id)&&(layerMode||fitsO(i)))
+      .map(i=>{let s=(isNeglected(i,wearStats().get(i.id))?1:0)+Math.random();
+        // for a layer, surface thin base layers (tanks, camis, fitted tees) first
+        if(layerMode&&["Tank / cami"].includes(i.type))s+=3;
+        else if(layerMode&&i.type==="T-shirt / top"&&["Tight","Fitted"].includes(i.fit))s+=1.5;
+        return {i,s,warn:""};}).sort((a,b)=>b.s-a.s);
   }
   if(!cands.length)h+=`<p class="note">No other ${st.addCat?esc(st.addCat.toLowerCase()):"pieces"} fit this occasion.</p>`;
   h+=`<div class="slotgrid">${cands.slice(0,40).map(c=>`<button class="slotpick" data-slotpick="${c.i.id}"><img src="${c.i.photo}" alt=""><span>${esc(c.i.name)}${c.warn?`<small>${esc(c.warn)}</small>`:""}</span></button>`).join("")}</div>
