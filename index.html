@@ -1124,18 +1124,22 @@ function scoreOutfit(o,ids,s,ctx){
     why.push(`Brings back your ${names}, unworn for ${Math.min(...n.map(i=>daysSince(i,w.get(i.id))))}+ days.`);
   }
   if(!ui.tripMode)for(const i of o)if(recent.has(i.id))score-=1/(i.qty||1);
+  // is this item's category pack-picked for the trip? then carrying it is already decided — rotate through the chosen set, don't minimise it
+  const PP=ui.packPick;
+  const ppOn=i=>!!(PP&&((i.category==="Shoes"&&PP.shoes.size)||(i.category==="Outerwear"&&PP.outer.size)||(i.category==="Bag"&&PP.bags.size)));
   if(ui.packBoost&&ui.packBoost.size)for(const i of o){
     const n=ui.packBoost.get(i.id)||0,q=i.qty||1;
-    if(["Shoes","Outerwear","Bag","Accessory"].includes(i.category))score+=n?3:-1.5;
+    if(ppOn(i))score-=n*2.5;             // picked piece: prefer whichever of the chosen coats/shoes/bags has been worn least so far
+    else if(["Shoes","Outerwear","Bag","Accessory"].includes(i.category))score+=n?3:-1.5;
     else if(i.category==="Bottom")score+=n>=3*q?-1.5:n?2:-.5;
     else if(i.category==="Top"||i.category==="Dress")score+=n>=2*q?-3:n?.5:0;
     else if(n)score+=.5;
   }
   if(ui.avoidMain)for(const i of o)if(ui.avoidMain.has(i.id)&&(i.category==="Top"||i.category==="Dress"||i.category==="Bottom"||i.category==="Swimwear"))score-=2.5;
   if(ui.carry){const c=ui.carry;for(const i of o){
-    if(i.category==="Shoes"&&!c.shoes.has(i.id)&&c.shoes.size>=2)score-=8;
-    if(i.category==="Outerwear"&&!MID.has(i.type)&&!c.outer.has(i.id)&&c.outer.size>=1)score-=6;
-    if(i.category==="Bag"&&!c.bags.has(i.id)&&c.bags.size>=1)score-=5;}}
+    if(i.category==="Shoes"&&!ppOn(i)&&!c.shoes.has(i.id)&&c.shoes.size>=2)score-=8;
+    if(i.category==="Outerwear"&&!MID.has(i.type)&&!ppOn(i)&&!c.outer.has(i.id)&&c.outer.size>=1)score-=6;
+    if(i.category==="Bag"&&!ppOn(i)&&!c.bags.has(i.id)&&c.bags.size>=1)score-=5;}}
   if(ui.travelDay){const bulky=o.filter(i=>W(i)>=3||["Boots","Coat","Puffer"].includes(i.type));
     if(bulky.length){score+=2*bulky.length;tips.push(`Wear the ${bulky.slice(0,2).map(i=>i.name).join(" and ")} while travelling, so ${bulky.length>1?"they're":"it's"} not taking up suitcase space.`)}}
   if(!ui.tripMode)for(const i of o)if(dueForWash(i))score-=3;
