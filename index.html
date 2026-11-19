@@ -325,6 +325,7 @@ const FIELDS={
   rainproof:{label:"Rain protection",opts:["Waterproof","Water-resistant","Not for rain"]},
   heel:{label:"Heel",opts:["Flat","Low","High"]},
   toe:{label:"Toe",opts:["Closed","Open"]},
+  bootHeight:{label:"Boot height",opts:["Ankle","Mid-calf","Knee-high","Over-the-knee"]},
   opacity:{label:"Opacity",opts:["Sheer","Opaque"]},
   sockHeight:{label:"Height",opts:["No-show","Ankle","Crew","Knee-high","Over-knee"]},
   bagSize:{label:"Size",opts:["Small","Medium","Large"]}
@@ -334,7 +335,7 @@ const LAYOUT={
   Dress:["sleeves","neckline","fit","dressLength","material","stretch","pattern","sheer","colors2"],
   Bottom:["silhouette","bottomLength","rise","fit","closure","material","stretch","pattern","sheer","colors2"],
   Outerwear:["sleeves","fit","outerLength","wornOpen","rainproof","material","pattern","colors2"],
-  Shoes:["heel","toe","material"],
+  Shoes:["heel","toe","bootHeight","material"],
   Legwear:["sockHeight","opacity","pattern"],
   Underlayer:["fit"],
   Bag:["bagSize","material"],
@@ -547,6 +548,7 @@ function parseDesc(text){
   r.rainproof=has(/waterproof|gore[- ]?tex|rain(coat|wear| jacket)/)?"Waterproof":has(/water[- ]resistant|water[- ]repellent|showerproof|dwr/)?"Water-resistant":undefined;
   r.heel=first([[/block heel|kitten|low heel/,"Low"],[/stiletto|high heel|\bheels?\b/,"High"],[/\bflat/,"Flat"]]);
   r.toe=first([[/open[- ]toe|peep[- ]toe|sandal|slide/,"Open"],[/closed[- ]toe|pointed toe|round toe|almond toe/,"Closed"]]);
+  r.bootHeight=first([[/over[- ]the[- ]knee|thigh[- ]high|otk\b/,"Over-the-knee"],[/knee[- ]high/,"Knee-high"],[/mid[- ]calf/,"Mid-calf"],[/ankle boot|chelsea boot|\bbootie/,"Ankle"]]);
   const den=L.match(/(\d+)\s?den/);r.opacity=den?(+den[1]>=40?"Opaque":"Sheer"):first([[/opaque/,"Opaque"],[/sheer/,"Sheer"]]);
   const wv=first([[/padded|\bdown\b|puffer|fleece|shearling|thermal|heavyweight|chunky|insulated/,3],[/cashmere|merino|wool/,3],[/linen|chiffon|mesh|lightweight|breezy|airy/,1],[/knit|sweater|jumper/,2]]);
   if(wv!=null)r.warmth=wv;
@@ -820,6 +822,9 @@ function suggest(){
     // shoes, bag, accessory
     const wearsTights=o.some(i=>i.category==="Legwear"&&i.type==="Tights");
     let shoeOpts=wearsTights?shoes.filter(s=>s.toe!=="Open"):shoes;
+    // tall boots (above mid-calf) don't go over trousers/jeans/leggings; any boot is fine with skirts and dresses
+    {const pantsBottom=o.find(i=>i.category==="Bottom"&&["Trousers","Jeans","Leggings"].includes(i.type));
+     if(pantsBottom)shoeOpts=shoeOpts.filter(s=>!(s.type==="Boots"&&["Knee-high","Over-the-knee"].includes(s.bootHeight)));}
     if(anchor&&anchor.type==="Socks")shoeOpts=shoeOpts.filter(s=>s.type==="Loafers");
     if(anchor&&anchor.category==="Shoes")o.push(anchor);else if(shoeOpts.length)o.push(choose(shoeOpts));
     // socks: only with loafers, never with tights
@@ -1601,6 +1606,7 @@ function renderSheet(){
     // outerwear uses a simpler sleeve set (no straps/strapless)
     if(f==="sleeves"&&cat==="Outerwear")def=FIELDS.outerSleeves;
     if(f==="sockHeight"&&d.type!=="Socks")return "";
+    if(f==="bootHeight"&&d.type!=="Boots")return "";
     const hint=def.multi?` <span class="hint-inline">(pick all that apply)</span>`:"";
     if(def.multi)return `<div class="field"><span>${def.label}${hint}</span><div class="chips wrap">${multi(f,def.colors?COLORNAMES:def.opts,d[f],def.colors)}</div></div>`;
     return `<div class="field"><span>${def.label}</span><div class="chips wrap">${single(f,def.opts,d[f])}</div></div>`;

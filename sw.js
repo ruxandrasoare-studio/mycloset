@@ -1,6 +1,6 @@
 // Network-first: when online, load the newest version and refresh the saved copy.
 // If the site is offline, paused or returns an error, keep using the saved copy.
-const CACHE = "closet-v3";
+const CACHE = "closet-v4";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
