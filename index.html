@@ -233,6 +233,19 @@ main{padding-top:26px}
 .slotpick small{color:var(--tag-ink);font-size:11px}
 .histmonth{font-size:13px;font-weight:600;color:var(--muted);margin:18px 0 6px;letter-spacing:.02em}
 .worntag{font-size:13px;font-weight:600;color:var(--accent);margin:0 0 8px}
+.packpick{margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.packpick>summary{font-weight:600;cursor:pointer;font-size:15.5px;list-style:none}
+.packpick>summary::-webkit-details-marker{display:none}
+.packpick>summary::before{content:"+ ";color:var(--muted)}
+.packpick[open]>summary::before{content:"– "}
+.pickrow{display:flex;gap:10px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:none}
+.pickrow::-webkit-scrollbar{display:none}
+.pickpiece{flex:none;width:72px;border:0;background:none;padding:0;cursor:pointer;color:inherit;text-align:center;position:relative;opacity:.55}
+.pickpiece.on{opacity:1}
+.pickpiece img{width:72px;height:72px;object-fit:cover;border-radius:8px;border:2px solid transparent}
+.pickpiece.on img{border-color:var(--accent)}
+.pickpiece.on::after{content:"✓";position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:12px;font-weight:700;display:grid;place-items:center}
+.pickpiece span{display:block;font-size:11.5px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
@@ -650,9 +663,15 @@ function suggest(){
   const pool=ready.filter(i=>(fitsOccasion(i)&&fitsWeather(i))||(anchor&&i.id===anchor.id));
   const by=(c,f)=>pool.filter(i=>i.category===c&&(!f||f(i)));
   const tops=by("Top"),bottoms=by("Bottom"),dresses=by("Dress");
-  const mids=by("Outerwear",i=>MID.has(i.type)),outers=by("Outerwear",i=>!MID.has(i.type));
+  let mids=by("Outerwear",i=>MID.has(i.type)),outers=by("Outerwear",i=>!MID.has(i.type));
   let shoes=by("Shoes");if(ui.occasion==="Sport"&&shoes.some(s=>s.type==="Sneakers"))shoes=shoes.filter(s=>s.type==="Sneakers");
-  const bags=by("Bag"),accs=by("Accessory"),tights=by("Legwear",i=>i.type==="Tights"),socks=by("Legwear",i=>i.type==="Socks"),unders=by("Underlayer");
+  let bags=by("Bag");const accs=by("Accessory"),tights=by("Legwear",i=>i.type==="Tights"),socks=by("Legwear",i=>i.type==="Socks"),unders=by("Underlayer");
+  // trip "pack picks": build only around the shoes / outerwear / bags the owner chose to bring (empty category = unrestricted)
+  if(ui.packPick){const P=ui.packPick;
+    if(P.shoes&&P.shoes.size&&shoes.some(i=>P.shoes.has(i.id)))shoes=shoes.filter(i=>P.shoes.has(i.id));
+    if(P.outer&&P.outer.size){const k=i=>P.outer.has(i.id);if(mids.concat(outers).some(k)){mids=mids.filter(k);outers=outers.filter(k);}}
+    if(P.bags&&P.bags.size&&bags.some(i=>P.bags.has(i.id)))bags=bags.filter(i=>P.bags.has(i.id));
+  }
   const neg=it=>isNeglected(it,w.get(it.id));
   const choose=list=>{
     if(!list.length)return null;
@@ -1833,7 +1852,7 @@ async function createTrip(){
     return {date,stop:travel&&travel.to!=="home"?travel.to:stop,travel,occasions:travel?["Travel"]:[...t.occ],laundry:false};
   });
   const id=rid();
-  const trip={id,name:t.name.trim()||stops.map(s=>s.name).join(" and "),stops,days,start,end,carryOn:t.carryOn,fallback:t.fallback,createdAt:Date.now(),packed:{},checks:{},outfits:{},built:false};
+  const trip={id,name:t.name.trim()||stops.map(s=>s.name).join(" and "),stops,days,start,end,carryOn:t.carryOn,fallback:t.fallback,createdAt:Date.now(),packed:{},checks:{},outfits:{},packPick:{shoes:[],outer:[],bags:[]},built:false};
   ui.newTrip=null;ui.tripId=id;
   await Store.put("trips",id,trip);render();scrollTo(0,0);
   refreshTripWeather(trip,true);
@@ -1911,13 +1930,15 @@ function recordUses(uses,o){
 
 /* ---- building outfits ---- */
 function withBrief(b,fn){
-  const keys=["occasion","weather","rain","anchor","neglect","packBoost","extraExclude","tripMode","avoidMain","tripUses","carry","travelDay","layerDown"];const save={};
+  const keys=["occasion","weather","rain","anchor","neglect","packBoost","extraExclude","tripMode","avoidMain","tripUses","carry","travelDay","layerDown","packPick"];const save={};
   keys.forEach(k=>save[k]=ui[k]);Object.assign(ui,b);
   try{return fn()}finally{keys.forEach(k=>ui[k]=save[k])}
 }
+function packPickSets(trip){const p=trip.packPick||{};return {shoes:new Set(p.shoes||[]),outer:new Set(p.outer||[]),bags:new Set(p.bags||[])};}
 function pickTripOutfit(trip,day,occ,ctx,avoid){
   const w=tripDayWeather(trip,day);
-  const brief={occasion:occ,weather:w.weather,rain:w.rain,anchor:null,neglect:false,packBoost:ctx.boost,extraExclude:ctx.exclude,tripMode:true,avoidMain:avoid||null,tripUses:ctx.uses,carry:trip.carryOn?ctx.carry:null,travelDay:occ==="Travel"||!!day.travel};
+  const pp=packPickSets(trip);const hasPicks=pp.shoes.size||pp.outer.size||pp.bags.size;
+  const brief={occasion:occ,weather:w.weather,rain:w.rain,anchor:null,neglect:false,packBoost:ctx.boost,extraExclude:ctx.exclude,tripMode:true,avoidMain:avoid||null,tripUses:ctx.uses,carry:trip.carryOn?ctx.carry:null,travelDay:occ==="Travel"||!!day.travel,packPick:hasPicks?pp:null};
   const r=withBrief(brief,()=>suggest());
   if(r[0])return {pick:r[0],w};
   const loose=withBrief({...brief,tripUses:null},()=>suggest());
@@ -1991,11 +2012,29 @@ function packExtras(trip){
 }
 
 /* ---- trip view ---- */
+function packPickSection(t){
+  const pp=t.packPick||{shoes:[],outer:[],bags:[]};
+  const groups=[["shoes","Shoes","Shoes"],["outer","Outerwear","Coats and jackets"],["bags","Bag","Bags"]];
+  const any=(pp.shoes||[]).length+(pp.outer||[]).length+(pp.bags||[]).length;
+  let h=`<details class="packpick"${any?" open":""}><summary>Pack around specific pieces${any?` (${any} chosen)`:""}</summary>
+  <p class="note">Tap the shoes, coats or bags you'll actually bring, and every outfit is built around only those. Leave a row untouched to let the app choose.</p>`;
+  for(const [key,cat,label] of groups){
+    const pieces=items().filter(i=>i.category===cat&&!i.needsTags&&available(i)).sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+    if(!pieces.length)continue;
+    const chosen=new Set(pp[key]||[]);
+    h+=`<p class="packcat">${esc(label)}${chosen.size?` · ${chosen.size} packed`:""}</p><div class="pickrow">`;
+    h+=pieces.map(i=>`<button class="pickpiece${chosen.has(i.id)?" on":""}" data-act="t-pick" data-k="${key}" data-id="${i.id}" aria-pressed="${chosen.has(i.id)}"><img src="${i.photo}" alt=""><span>${esc(i.name)}</span></button>`).join("");
+    h+=`</div>`;
+  }
+  h+=`</details>`;
+  return h;
+}
 function renderTrip(t){
   const n=t.days.length;
   let h=`<button class="btn quiet" data-act="t-back" style="padding-left:0">← Plan</button><h1>${esc(t.name)}</h1>
   <p class="sub">${esc(tripSummary(t))}. ${n} ${n===1?"day":"days"}.</p><!--/head-->
   <div class="chips wrap">${chip("t-carry","Carry-on only",!!t.carryOn)}</div>`;
+  h+=packPickSection(t);
   const srcs=new Set(t.days.map(d=>tripDayWeather(t,d).src));
   h+=`<p class="note">${srcs.has("forecast")?"Weather from the forecast where available. ":""}${srcs.has("last year")?"Days beyond the 16-day forecast use last year's weather on the same dates. ":""}${srcs.has("expected")?`Days without data assume ${esc((t.fallback||"Mild").toLowerCase())} weather. `:""}<button class="linkbtn" data-act="t-refresh">Refresh weather</button></p>`;
   if(!t.built)h+=`<div class="banner"><span>Set each day's occasions, travel days and any laundry day, then build the outfits.</span></div>`;
@@ -2335,6 +2374,7 @@ document.addEventListener("click",async e=>{
     case "t-create":createTrip();break;
     case "t-open":{const t=S.trips.get(id);ui.tripId=id;ui.editList=false;render();scrollTo(0,0);refreshTripWeather(t,false);break}
     case "t-carry":{const t=S.trips.get(ui.tripId);if(t){t.carryOn=!t.carryOn;if(t.built)buildTrip(t);await Store.put("trips",t.id,t);render()}break}
+    case "t-pick":{const t=S.trips.get(ui.tripId);if(!t)break;t.packPick=t.packPick||{shoes:[],outer:[],bags:[]};const k=el.dataset.k;const arr0=t.packPick[k]||[];const has=arr0.includes(id);t.packPick[k]=has?arr0.filter(x=>x!==id):[...arr0,id];if(t.built)buildTrip(t);await Store.put("trips",t.id,t);render();break}
     case "t-dayocc":{const t=S.trips.get(ui.tripId);if(!t)break;const day=t.days.find(d=>d.date===el.dataset.d);if(!day)break;
       day.occasions=day.occasions.includes(v)?day.occasions.filter(x=>x!==v):[...day.occasions,v];
       if(t.built)buildTrip(t,day.date);await Store.put("trips",t.id,t);render();break}
