@@ -230,6 +230,8 @@ main{padding-top:26px}
 .slotpick img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px}
 .slotpick span{font-size:12.5px;line-height:1.2;display:flex;flex-direction:column}
 .editedtag{font-size:11px;font-weight:600;color:var(--tag-ink);background:var(--tag);padding:1px 7px;border-radius:999px;margin-left:4px}
+.locktag{font-size:11px;font-weight:600;color:var(--accent-ink,#fff);background:var(--accent);padding:1px 7px;border-radius:999px;margin-left:4px}
+.tripfit.locked{border-left:3px solid var(--accent);padding-left:8px;margin-left:-11px}
 .slotpick small{color:var(--tag-ink);font-size:11px}
 .histmonth{font-size:13px;font-weight:600;color:var(--muted);margin:18px 0 6px;letter-spacing:.02em}
 .worntag{font-size:13px;font-weight:600;color:var(--accent);margin:0 0 8px}
@@ -1969,7 +1971,15 @@ function buildTrip(trip,onlyDate){
       out[day.date]=trip.outfits[day.date];
       for(const o of out[day.date])if(o.itemIds.length)noteUse(ctx,o.itemIds.map(id=>S.items.get(id)).filter(Boolean));
     }else{
-      out[day.date]=day.occasions.map(occ=>{
+      // locked outfits survive a rebuild — keep them and let their pieces count toward the rest of the trip
+      const prev=(trip.outfits&&trip.outfits[day.date])||[];
+      const lockedPool=prev.filter(o=>o&&o.locked&&o.itemIds&&o.itemIds.length);
+      const usedLocked=new Set();
+      out[day.date]=day.occasions.map((occ,idx)=>{
+        let old=null;
+        if(prev[idx]&&prev[idx].locked&&prev[idx].occasion===occ&&prev[idx].itemIds&&prev[idx].itemIds.length&&!usedLocked.has(prev[idx]))old=prev[idx];
+        else old=lockedPool.find(o=>o.occasion===occ&&!usedLocked.has(o))||null;
+        if(old){usedLocked.add(old);noteUse(ctx,old.itemIds.map(id=>S.items.get(id)).filter(Boolean));return old;}
         const {pick,w,short}=pickTripOutfit(trip,day,occ,ctx);
         if(!pick)return {occasion:occ,itemIds:[],short,why:short?`Not enough fresh pieces left for ${occ.toLowerCase()} by this day. Add a laundry day earlier, or tag more pieces for it.`:occasionGap(occ,w.weather),weather:w.weather,rain:w.rain};
         noteUse(ctx,pick.itemIds.map(id=>S.items.get(id)).filter(Boolean));
@@ -2063,9 +2073,9 @@ function renderTrip(t){
       <label class="field" style="margin:0;flex:1"><span>To</span><select class="datein" data-tsel="to" data-d="${day.date}">${places.map(([v,l])=>`<option value="${v}" ${String(day.travel.to)===v?"selected":""}>${esc(l)}</option>`).join("")}</select></label></div>`;
     (t.built?(t.outfits[day.date]||[]):[]).forEach((o,i)=>{
       const tref="t:"+day.date+":"+i;
-      h+=`<div class="tripfit"><p class="label">${esc(o.occasion)}${o.edited?' <span class="editedtag">edited</span>':""}</p>${o.itemIds.length?collage(o.itemIds,true,tref):""}<p class="why">${esc(o.why)}</p>
+      h+=`<div class="tripfit${o.locked?" locked":""}"><p class="label">${esc(o.occasion)}${o.locked?' <span class="locktag">🔒 locked</span>':""}${o.edited?' <span class="editedtag">edited</span>':""}</p>${o.itemIds.length?collage(o.itemIds,true,tref):""}<p class="why">${esc(o.why)}</p>
       ${o.tips&&o.tips.length?`<ul class="tips">${o.tips.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}
-      <div class="row">${o.itemIds.length?`<button class="btn ghost" data-act="t-swap" data-d="${day.date}" data-i="${i}">Shuffle</button>`:""}${day.date===today()&&o.itemIds.length?`<button class="btn" data-act="t-wear" data-d="${day.date}" data-i="${i}">Wear today</button>`:""}</div></div>`;
+      <div class="row">${o.itemIds.length?`<button class="btn ghost" data-act="t-swap" data-d="${day.date}" data-i="${i}">Shuffle</button>`:""}${o.itemIds.length?`<button class="btn quiet" data-act="t-lock" data-d="${day.date}" data-i="${i}" aria-pressed="${!!o.locked}">${o.locked?"Unlock":"Lock"}</button>`:""}${day.date===today()&&o.itemIds.length?`<button class="btn" data-act="t-wear" data-d="${day.date}" data-i="${i}">Wear today</button>`:""}</div></div>`;
     });
     if(!day.occasions.length)h+=`<p class="note">No occasions picked for this day.</p>`;
     h+=`</article>`;
@@ -2407,6 +2417,7 @@ document.addEventListener("click",async e=>{
     case "t-laundry":{const t=S.trips.get(ui.tripId);if(!t)break;const day=t.days.find(d=>d.date===el.dataset.d);if(!day)break;day.laundry=!day.laundry;if(t.built)buildTrip(t);await Store.put("trips",t.id,t);render();break}
     case "t-build":{const t=S.trips.get(ui.tripId);if(t){buildTrip(t);await Store.put("trips",t.id,t);render();toast("Outfits built for every day")}break}
     case "t-swap":{const t=S.trips.get(ui.tripId);if(t){swapTripOutfit(t,el.dataset.d,+el.dataset.i);await Store.put("trips",t.id,t);render()}break}
+    case "t-lock":{const t=S.trips.get(ui.tripId);const list=t&&t.outfits&&t.outfits[el.dataset.d];const o=list&&list[+el.dataset.i];if(o){o.locked=!o.locked;await Store.put("trips",t.id,t);render();toast(o.locked?"Locked — it won't change when you rebuild":"Unlocked")}break}
     case "t-pack":{const t=S.trips.get(ui.tripId);if(t){t.packed=t.packed||{};t.packed[id]=!t.packed[id];await Store.put("trips",t.id,t);render()}break}
     case "t-check":{const t=S.trips.get(ui.tripId);if(t){t.checks=t.checks||{};t.checks[v]=!t.checks[v];await Store.put("trips",t.id,t);render()}break}
     case "t-editlist":ui.editList=!ui.editList;render();break;
